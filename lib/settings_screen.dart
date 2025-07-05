@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'orders_screen.dart';
+import 'user_given_reviews_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -263,7 +264,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _SettingSwitch(icon: Icons.notifications, label: "Nhận yêu cầu thuê Duo", value: false),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const UserGivenReviewsScreen()),
+                        );
+                      },
+                      child: _SettingRow(
+                        icon: Icons.star,
+                        label: 'Đánh giá',
+                        color: Colors.amber,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () {

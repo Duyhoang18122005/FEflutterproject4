@@ -923,4 +923,40 @@ class ApiService {
     }
     return null;
   }
+
+  static Future<bool> submitOrderReview({
+    required String orderId,
+    required int rating,
+    String? comment,
+  }) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'rating': rating,
+        'comment': comment ?? '',
+      }),
+    );
+    return response.statusCode == 200;
+  }
+
+  static Future<List<dynamic>?> getUserGivenReviews() async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/user/given-reviews'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']['reviews'] as List?;
+    }
+    return null;
+  }
 }

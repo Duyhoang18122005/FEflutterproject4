@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'hire_confirmation_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({Key? key}) : super(key: key);
@@ -76,73 +77,92 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           final order = orders[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 2,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(Icons.event_note, color: Colors.deepOrange, size: 32),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      'Đơn #${order['id']} - ${order['game'] ?? ''}',
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => HireConfirmationScreen(
+                                      playerName: order['playerName'] ?? '',
+                                      playerAvatarUrl: order['playerAvatarUrl'] ?? '',
+                                      playerRank: order['playerRank'] ?? '',
+                                      game: order['game'] ?? '',
+                                      hours: order['hours'] is int ? order['hours'] : int.tryParse(order['hours']?.toString() ?? '') ?? 0,
+                                      totalCoin: order['price'] is int ? order['price'] : int.tryParse(order['price']?.toString() ?? '') ?? 0,
+                                      orderId: order['id'].toString(),
+                                      startTime: order['hireTime'] ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(Icons.event_note, color: Colors.deepOrange, size: 32),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Đơn #${order['id']} - ${order['game'] ?? ''}',
+                                                        style: const TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${order['price']} xu',
                                                       style: const TextStyle(
                                                         fontWeight: FontWeight.bold,
-                                                        fontSize: 16,
+                                                        color: Colors.deepOrange,
+                                                        fontSize: 15,
                                                       ),
-                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                  ),
-                                                  Text(
-                                                    '${order['price']} xu',
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.deepOrange,
-                                                      fontSize: 15,
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text('Người thuê: ${order['renterName']}', style: const TextStyle(fontSize: 14)),
+                                                Text('Player: ${order['playerName']}', style: const TextStyle(fontSize: 14)),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                                                    const SizedBox(width: 4),
+                                                    Expanded(
+                                                      child: Text(
+                                                        '${order['hireTime']}',
+                                                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text('Người thuê: ${order['renterName']}', style: const TextStyle(fontSize: 14)),
-                                              Text('Player: ${order['playerName']}', style: const TextStyle(fontSize: 14)),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      '${order['hireTime']}',
-                                                      style: const TextStyle(fontSize: 13, color: Colors.black54),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text('Trạng thái: ${order['statusLabel']}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
-                                              Text('Loại đơn: ${order['orderType'] == 'HIRED' ? 'Tôi thuê' : 'Tôi được thuê'}', style: const TextStyle(fontSize: 13)),
-                                            ],
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text('Trạng thái: ${order['statusLabel']}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                                                Text('Loại đơn: ${order['orderType'] == 'HIRED' ? 'Tôi thuê' : 'Tôi được thuê'}', style: const TextStyle(fontSize: 13)),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

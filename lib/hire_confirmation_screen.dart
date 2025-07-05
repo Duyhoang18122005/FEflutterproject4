@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'dart:async';
 import 'utils/notification_helper.dart';
+import 'rate_player_screen.dart';
 
 class HireConfirmationScreen extends StatefulWidget {
   final String playerName;
@@ -537,6 +538,40 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                         ),
                       ),
                   ],
+                  if (orderStatus == 'COMPLETED')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: SizedBox(
+                        width: 180,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.star, color: Colors.white),
+                          label: const Text(
+                            'Đánh giá',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepOrange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RatePlayerScreen(
+                                  playerName: playerName,
+                                  playerId: orderDetail?['playerId']?.toString() ?? '',
+                                  orderId: widget.orderId,
+                                  playerAvatarUrl: playerAvatarUrl,
+                                  playerRank: playerRank,
+                                  game: game,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
