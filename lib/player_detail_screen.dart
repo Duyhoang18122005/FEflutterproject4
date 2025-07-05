@@ -390,85 +390,122 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
             ),
             const SizedBox(height: 12),
             if (selectedTab == 0) _buildPlayerInfo(player),
-            // Ảnh
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFFFFE0B2),
-                    ),
-                    child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFFFFE0B2),
-                    ),
-                    child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFFFFE0B2),
-                    ),
-                    child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                  ),
-                  const SizedBox(width: 8),
-                  Stack(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: const Color(0xFFFFE0B2),
-                        ),
-                        child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                      ),
-                      const Positioned.fill(
-                        child: Center(
-                          child: Text('+5', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (selectedTab == 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: const [
-                    Text(
-                      'VUI LÒNG NHẮN TIN TRƯỚC KHI THUÊ !',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF616161)),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'CHỈ DÙNG DUY NHẤT MỘT ACC PLAYDUO NÀY VÀ MỘT FACEBOOK NHƯ LINK DƯỚI',
-                      style: TextStyle(color: Color(0xFF9E9E9E)),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
             const SizedBox(height: 24),
+            if (selectedTab == 1)
+              _PlayerReviewsTab(playerId: player['id'].toString()),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlayerReviewsTab extends StatefulWidget {
+  final String playerId;
+  const _PlayerReviewsTab({required this.playerId});
+  @override
+  State<_PlayerReviewsTab> createState() => _PlayerReviewsTabState();
+}
+
+class _PlayerReviewsTabState extends State<_PlayerReviewsTab> {
+  List<dynamic> reviews = [];
+  bool isLoading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReviews();
+  }
+
+  Future<void> _fetchReviews() async {
+    setState(() { isLoading = true; error = null; });
+    try {
+      final fetched = await ApiService.getPlayerReviews(widget.playerId);
+      setState(() {
+        reviews = fetched ?? [];
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        error = 'Lỗi khi tải đánh giá: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(child: Text(error!));
+    }
+    if (reviews.isEmpty) {
+      return const Center(child: Text('Chưa có đánh giá nào.'));
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: reviews.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemBuilder: (context, index) {
+        final review = reviews[index];
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: (review['reviewerAvatar'] != null && review['reviewerAvatar'].toString().isNotEmpty)
+                          ? NetworkImage(review['reviewerAvatar'])
+                          : null,
+                      backgroundColor: Colors.deepOrange.shade50,
+                      child: (review['reviewerAvatar'] == null || review['reviewerAvatar'].toString().isEmpty)
+                          ? const Icon(Icons.person, color: Colors.deepOrange)
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(review['reviewerName'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(5, (i) => Icon(
+                        Icons.star,
+                        size: 20,
+                        color: i < (review['rating'] ?? 0) ? Colors.amber : Colors.grey[300],
+                      )),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (review['comment'] != null && review['comment'].toString().isNotEmpty)
+                  Text('"${review['comment']}"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(review['createdAt'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 } 

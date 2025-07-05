@@ -959,4 +959,32 @@ class ApiService {
     }
     return null;
   }
+
+  static Future<bool> deleteOrderReview(String orderId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.delete(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    return response.statusCode == 200;
+  }
+
+  static Future<List<dynamic>?> getPlayerReviews(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/player/$playerId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']['reviews'] as List?;
+    }
+    return null;
+  }
 }

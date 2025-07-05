@@ -97,12 +97,44 @@ class _UserGivenReviewsScreenState extends State<UserGivenReviewsScreen> {
                                         ],
                                       ),
                                     ),
-                                    Row(
-                                      children: List.generate(5, (i) => Icon(
-                                        Icons.star,
-                                        size: 20,
-                                        color: i < (review['rating'] ?? 0) ? Colors.amber : Colors.grey[300],
-                                      )),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: 'Xóa đánh giá',
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Xác nhận xóa'),
+                                            content: const Text('Bạn có chắc chắn muốn xóa đánh giá này?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, false),
+                                                child: const Text('Hủy'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(context, true),
+                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                                child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm == true) {
+                                          final success = await ApiService.deleteOrderReview(review['orderId'].toString());
+                                          if (success) {
+                                            setState(() {
+                                              reviews.removeAt(index);
+                                            });
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Xóa đánh giá thành công!')),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Xóa đánh giá thất bại!')),
+                                            );
+                                          }
+                                        }
+                                      },
                                     ),
                                   ],
                                 ),
