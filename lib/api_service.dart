@@ -987,4 +987,39 @@ class ApiService {
     }
     return null;
   }
+
+  static Future<Map<String, dynamic>?> getPlayerRatingSummary(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/rating-summary/player/$playerId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'] as Map<String, dynamic>?;
+    }
+    return null;
+  }
+
+  static Future<List<String>> getPlayerImages(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/game-players/$playerId/images'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final images = data['data']['images'] as List?;
+      if (images != null) {
+        return images.map((img) => img['imageUrl'] as String).toList();
+      }
+    }
+    return [];
+  }
 }

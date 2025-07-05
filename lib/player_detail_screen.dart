@@ -66,12 +66,18 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   bool isFollowing = false;
   bool isLoadingFollow = false;
   int selectedTab = 0; // 0: Thông tin, 1: Đánh giá, 2: Thành tích
+  double? averageRating;
+  int? totalReviews;
+  List<String> playerImages = [];
+  bool isLoadingImages = true;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
     _checkFollowing();
+    _loadRatingSummary();
+    _loadPlayerImages();
   }
 
   Future<void> _loadStats() async {
@@ -131,6 +137,28 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     setState(() { isLoadingFollow = false; });
   }
 
+  Future<void> _loadRatingSummary() async {
+    final id = widget.player['id']?.toString();
+    if (id != null) {
+      final summary = await ApiService.getPlayerRatingSummary(id);
+      setState(() {
+        averageRating = summary?['averageRating']?.toDouble() ?? 0.0;
+        totalReviews = summary?['totalReviews']?.toInt() ?? 0;
+      });
+    }
+  }
+
+  Future<void> _loadPlayerImages() async {
+    final id = widget.player['id']?.toString();
+    if (id != null) {
+      final images = await ApiService.getPlayerImages(id);
+      setState(() {
+        playerImages = images;
+        isLoadingImages = false;
+      });
+    }
+  }
+
   Widget _buildPlayerInfo(Map<String, dynamic> player) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -161,6 +189,10 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
 
   String _formatXuPerHour(dynamic price) {
     return '${formatXu(price)} xu/h';
+  }
+
+  String fixedUrl(String url) {
+    return url.replaceFirst('http://localhost:', 'http://10.0.2.2:');
   }
 
   @override
@@ -225,9 +257,23 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ...List.generate(5, (i) => const Icon(Icons.star, color: Colors.amber, size: 20)),
-                const SizedBox(width: 6),
-                const Text('(106 đánh giá)', style: TextStyle(color: Colors.grey)),
+                if (averageRating != null)
+                  Row(
+                    children: [
+                      ...List.generate(5, (i) => Icon(
+                        i < averageRating!.round()
+                            ? Icons.star
+                            : (i < averageRating! ? Icons.star_half : Icons.star_border),
+                        color: Colors.amber,
+                        size: 20,
+                      )),
+                      const SizedBox(width: 6),
+                      Text(
+                        '(${totalReviews ?? 0} đánh giá)',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -389,8 +435,84 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            if (selectedTab == 0) _buildPlayerInfo(player),
-            const SizedBox(height: 24),
+            if (selectedTab == 0) ...[
+              _buildPlayerInfo(player),
+              const SizedBox(height: 12),
+              // Dãy ảnh thật
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: List.generate(4, (i) {
+                    if (isLoadingImages) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Color(0xFFFFE0B2),
+                        ),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      );
+                    }
+                    if (i < playerImages.length) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Color(0xFFFFE0B2),
+                          image: DecorationImage(
+                            image: NetworkImage(fixedUrl(playerImages[i])),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    }
+                    if (i == 3 && playerImages.length > 4) {
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Color(0xFFFFE0B2),
+                              image: DecorationImage(
+                                image: NetworkImage(fixedUrl(playerImages[3])),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Center(
+                              child: Text(
+                                '+${playerImages.length - 3}',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    // Nếu không có ảnh, hiển thị icon mặc định
+                    return Container(
+                      width: 60,
+                      height: 60,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Color(0xFFFFE0B2),
+                      ),
+                      child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (selectedTab == 1)
               _PlayerReviewsTab(playerId: player['id'].toString()),
           ],
