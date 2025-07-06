@@ -561,7 +561,6 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                                 builder: (context) => RatePlayerScreen(
                                   playerName: playerName,
                                   playerId: orderDetail?['playerId']?.toString() ?? '',
-                                  orderId: widget.orderId,
                                   playerAvatarUrl: playerAvatarUrl,
                                   playerRank: playerRank,
                                   game: game,

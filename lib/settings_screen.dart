@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'orders_screen.dart';
 import 'user_given_reviews_screen.dart';
+import 'package:http_parser/http_parser.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -151,8 +152,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final dio = Dio();
       dio.options.headers['Authorization'] = 'Bearer $token';
       final url = 'http://10.0.2.2:8080/api/game-players/$playerId/images';
+      final ext = _selectedImage!.path.split('.').last.toLowerCase();
+      final contentType = (ext == 'png')
+          ? MediaType('image', 'png')
+          : MediaType('image', 'jpeg');
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(_selectedImage!.path, filename: _selectedImage!.path.split('/').last),
+        'file': await MultipartFile.fromFile(
+          _selectedImage!.path,
+          filename: _selectedImage!.path.split('/').last,
+          contentType: contentType,
+        ),
       });
       final response = await dio.post(url, data: formData);
       if (response.statusCode == 200) {
@@ -169,9 +178,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(content: Text('Lỗi: ${response.statusMessage}')),
         );
       }
-    } catch (e) {
+    } on DioError catch (e) {
+      print('Lỗi upload ảnh: ${e.response?.data}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi upload ảnh: $e')),
+        SnackBar(content: Text('Lỗi upload ảnh: ${e.response?.data ?? e.toString()}')),
       );
     }
   }

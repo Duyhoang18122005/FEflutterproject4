@@ -441,75 +441,32 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
               // Dãy ảnh thật
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: List.generate(4, (i) {
-                    if (isLoadingImages) {
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Color(0xFFFFE0B2),
-                        ),
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      );
-                    }
-                    if (i < playerImages.length) {
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Color(0xFFFFE0B2),
-                          image: DecorationImage(
-                            image: NetworkImage(fixedUrl(playerImages[i])),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    }
-                    if (i == 3 && playerImages.length > 4) {
-                      return Stack(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Color(0xFFFFE0B2),
-                              image: DecorationImage(
-                                image: NetworkImage(fixedUrl(playerImages[3])),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Center(
-                              child: Text(
-                                '+${playerImages.length - 3}',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    // Nếu không có ảnh, hiển thị icon mặc định
-                    return Container(
+                child: playerImages.isEmpty
+                  ? Container(
                       width: 60,
                       height: 60,
-                      margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Color(0xFFFFE0B2),
                       ),
                       child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                    );
-                  }),
-                ),
+                    )
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: playerImages.map((imgUrl) => Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Color(0xFFFFE0B2),
+                          image: DecorationImage(
+                            image: NetworkImage(fixedUrl(imgUrl)),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
               ),
               const SizedBox(height: 16),
             ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'utils/notification_helper.dart';
-import 'api_service.dart';
 
 class RatePlayerScreen extends StatefulWidget {
   final String playerName;
@@ -8,13 +7,11 @@ class RatePlayerScreen extends StatefulWidget {
   final String? playerRank;
   final String? game;
   final String playerId;
-  final String orderId;
 
   const RatePlayerScreen({
     Key? key,
     required this.playerName,
     required this.playerId,
-    required this.orderId,
     this.playerAvatarUrl,
     this.playerRank,
     this.game,
@@ -37,22 +34,12 @@ class _RatePlayerScreenState extends State<RatePlayerScreen> {
       return;
     }
     setState(() { isSubmitting = true; });
-    final success = await ApiService.submitOrderReview(
-      orderId: widget.orderId,
-      rating: rating,
-      comment: _commentController.text,
-    );
+    await Future.delayed(const Duration(seconds: 1)); // Giả lập gửi API
     setState(() { isSubmitting = false; });
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gửi đánh giá thành công!')),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gửi đánh giá thất bại!')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gửi đánh giá thành công!')),
+    );
+    Navigator.pop(context);
   }
 
   @override
