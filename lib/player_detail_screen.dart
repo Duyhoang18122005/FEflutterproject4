@@ -4,6 +4,8 @@ import 'donate_player_screen.dart';
 import 'chat_screen.dart';
 import 'api_service.dart';
 import 'utils/notification_helper.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 
 class _StatItem extends StatelessWidget {
   final String label;
@@ -70,6 +72,9 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   int? totalReviews;
   List<String> playerImages = [];
   bool isLoadingImages = true;
+  Uint8List? avatarBytes;
+  int? totalHireHours;
+  bool isLoadingHireHours = true;
 
   @override
   void initState() {
@@ -78,6 +83,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     _checkFollowing();
     _loadRatingSummary();
     _loadPlayerImages();
+    _loadAvatar();
+    _loadHireHours();
   }
 
   Future<void> _loadStats() async {
@@ -159,6 +166,49 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     }
   }
 
+  Future<void> _loadAvatar() async {
+    final userId = widget.player['user']?['id']?.toString();
+    if (userId == null) return;
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          avatarBytes = Uint8List.fromList(response.data);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadHireHours() async {
+    setState(() { isLoadingHireHours = true; });
+    final playerId = widget.player['id']?.toString();
+    if (playerId == null) return;
+    try {
+      final token = await ApiService.storage.read(key: 'jwt');
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/players/$playerId/hire-hours',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          totalHireHours = response.data['totalHireHours'] ?? 0;
+          isLoadingHireHours = false;
+        });
+      } else {
+        setState(() { isLoadingHireHours = false; });
+      }
+    } catch (_) {
+      setState(() { isLoadingHireHours = false; });
+    }
+  }
+
   Widget _buildPlayerInfo(Map<String, dynamic> player) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -193,6 +243,115 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
 
   String fixedUrl(String url) {
     return url.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+  }
+
+  void _showAllImages({int initialIndex = 0}) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (_) {
+        final controller = PageController(initialPage: initialIndex);
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(12),
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: controller,
+                itemCount: playerImages.length,
+                itemBuilder: (context, index) {
+                  return Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        playerImages[index],
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Indicator
+              Positioned(
+                bottom: 16,
+                left: 0, right: 0,
+                child: Center(
+                  child: ValueListenableBuilder(
+                    valueListenable: controller,
+                    builder: (context, PageController value, _) {
+                      int page = value.hasClients ? value.page?.round() ?? 0 : 0;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${page + 1} / ${playerImages.length}',
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              // Close button
+              Positioned(
+                top: 8, right: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlayerImagesGallery() {
+    final int maxShow = 5;
+    final int totalImages = playerImages.length;
+    final List<String> showImages = totalImages > maxShow ? playerImages.sublist(0, maxShow) : playerImages;
+    final int remain = totalImages - maxShow;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: List.generate(showImages.length, (index) {
+          final img = showImages[index];
+          final isLast = index == maxShow - 1 && remain > 0;
+          return GestureDetector(
+            onTap: () => _showAllImages(initialIndex: index),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(img, width: 60, height: 60, fit: BoxFit.cover),
+                ),
+                if (isLast)
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '+$remain',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   @override
@@ -232,7 +391,10 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                     child: CircleAvatar(
                       radius: 52,
                       backgroundColor: const Color(0xFFFFE0B2),
-                      child: const Icon(Icons.person, size: 52, color: Color(0xFFFFA726)),
+                      backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                      child: avatarBytes == null
+                        ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
+                        : null,
                     ),
                   ),
                 ),
@@ -401,7 +563,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _StatItem(label: 'Người\nTheo dõi', value: isLoadingStats ? '...' : followerCount.toString()),
-                  _StatItem(label: 'Giờ\nĐược thuê', value: isLoadingStats ? '...' : hireHours.toString()),
+                  _StatItem(label: 'Giờ\nĐược thuê', value: isLoadingHireHours ? '...' : (totalHireHours?.toString() ?? '0')),
                   const _StatItem(label: '%\nHoàn thành', value: '94.34'),
                   const _StatItem(label: 'Thiết bị', value: '', icon: Icons.block),
                 ],
@@ -438,37 +600,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
             if (selectedTab == 0) ...[
               _buildPlayerInfo(player),
               const SizedBox(height: 12),
-              // Dãy ảnh thật
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: playerImages.isEmpty
-                  ? Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Color(0xFFFFE0B2),
-                      ),
-                      child: const Icon(Icons.person, size: 36, color: Color(0xFFFFA726)),
-                    )
-                  : Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: playerImages.map((imgUrl) => Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Color(0xFFFFE0B2),
-                          image: DecorationImage(
-                            image: NetworkImage(fixedUrl(imgUrl)),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      )).toList(),
-                    ),
-              ),
-              const SizedBox(height: 16),
+              if (playerImages.isNotEmpty) _buildPlayerImagesGallery(),
             ],
             if (selectedTab == 1)
               _PlayerReviewsTab(playerId: player['id'].toString()),

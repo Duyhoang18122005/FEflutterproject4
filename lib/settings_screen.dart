@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'orders_screen.dart';
 import 'user_given_reviews_screen.dart';
 import 'package:http_parser/http_parser.dart';
+import 'dart:typed_data';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -33,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? playerId;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+  Uint8List? avatarBytes;
 
   @override
   void initState() {
@@ -59,9 +61,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadUserInfo() async {
     final userInfo = await ApiService.getCurrentUser();
+    String id = userInfo?['id']?.toString() ?? '';
+    Uint8List? bytes;
+    if (id.isNotEmpty) {
+      try {
+        final response = await Dio().get(
+          'http://10.0.2.2:8080/api/auth/avatar/$id',
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (response.statusCode == 200) {
+          bytes = Uint8List.fromList(response.data);
+        }
+      } catch (_) {
+        bytes = null;
+      }
+    }
     if (mounted) {
       setState(() {
-        userId = userInfo?['id']?.toString() ?? '';
+        userId = id;
+        avatarBytes = bytes;
         isLoading = false;
       });
     }
@@ -136,52 +154,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickAndUploadAvatar() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _uploadImage() async {
-    if (_selectedImage == null || playerId == null) return;
+    if (pickedFile == null) return;
+    final file = pickedFile.path;
+    final token = await ApiService.storage.read(key: 'jwt');
+    final dio = Dio();
+    dio.options.headers['Authorization'] = 'Bearer $token';
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file, filename: file.split('/').last),
+    });
     try {
-      final token = await ApiService.storage.read(key: 'jwt');
-      final dio = Dio();
-      dio.options.headers['Authorization'] = 'Bearer $token';
-      final url = 'http://10.0.2.2:8080/api/game-players/$playerId/images';
-      final ext = _selectedImage!.path.split('.').last.toLowerCase();
-      final contentType = (ext == 'png')
-          ? MediaType('image', 'png')
-          : MediaType('image', 'jpeg');
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          _selectedImage!.path,
-          filename: _selectedImage!.path.split('/').last,
-          contentType: contentType,
-        ),
-      });
-      final response = await dio.post(url, data: formData);
+      final response = await dio.post(
+        'http://10.0.2.2:8080/api/auth/update/avatar',
+        data: formData,
+      );
       if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tải ảnh lên thành công!')),
-          );
-        }
-        setState(() {
-          _selectedImage = null;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật avatar thành công!')),
+        );
+        await _loadUserInfo(); // Reload lại avatar sau khi upload thành công
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: ${response.statusMessage}')),
+          SnackBar(content: Text('Lỗi:  ̷${response.statusMessage}')),
         );
       }
     } on DioError catch (e) {
-      print('Lỗi upload ảnh: ${e.response?.data}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi upload ảnh: ${e.response?.data ?? e.toString()}')),
+        SnackBar(content: Text('Lỗi upload avatar: ${e.response?.data ?? e.toString()}')),
       );
     }
   }
@@ -206,12 +206,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 54,
-                    backgroundColor: Colors.deepOrange[100],
-                    child: const Text(
-                      "🍄",
-                      style: TextStyle(fontSize: 54),
+                  GestureDetector(
+                    onTap: _pickAndUploadAvatar,
+                    child: CircleAvatar(
+                      radius: 54,
+                      backgroundColor: Colors.deepOrange[100],
+                      backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                      child: avatarBytes == null
+                        ? const Text(
+                            "🍄",
+                            style: TextStyle(fontSize: 54),
+                          )
+                        : null,
                     ),
                   ),
                   Positioned(
@@ -356,7 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     if (isPlayer)
                       GestureDetector(
-                        onTap: _pickImage,
+                        onTap: _pickAndUploadAvatar,
                         child: _SettingRow(
                           icon: Icons.cloud_upload,
                           label: 'Tải ảnh lên',
@@ -378,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             const SizedBox(height: 8),
                             ElevatedButton(
-                              onPressed: _uploadImage,
+                              onPressed: _pickAndUploadAvatar,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.deepOrange,
                                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),

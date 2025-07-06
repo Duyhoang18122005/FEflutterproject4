@@ -5,6 +5,8 @@ import 'api_service.dart';
 import 'deposit_screen.dart';
 import 'dart:async';
 import 'hired_players_screen.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -606,6 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       tags: 'Rank: ${player['rank'] ?? ''}\nRole: ${player['role'] ?? ''}\nServer: ${player['server'] ?? ''}',
                                       isOnline: player['status'] == 'AVAILABLE',
                                       isGray: false,
+                                      userId: player['user']?['id']?.toString() ?? '',
                                     ),
                                   );
                                 }).toList(),
@@ -637,6 +640,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       tags: 'Rank: ${player['rank'] ?? ''}\nRole: ${player['role'] ?? ''}\nServer: ${player['server'] ?? ''}',
                                       isOnline: player['status'] == 'AVAILABLE',
                                       isGray: false,
+                                      userId: player['user']?['id']?.toString() ?? '',
                                     ),
                                   );
                                 }).toList(),
@@ -668,6 +672,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       tags: 'Rank: ${player['rank'] ?? ''}\nRole: ${player['role'] ?? ''}\nServer: ${player['server'] ?? ''}',
                                       isOnline: player['status'] == 'AVAILABLE',
                                       isGray: false,
+                                      userId: player['user']?['id']?.toString() ?? '',
                                     ),
                                   );
                                 }).toList(),
@@ -794,6 +799,7 @@ class _VipPlayerCard extends StatelessWidget {
   final String tags;
   final bool isOnline;
   final bool isGray;
+  final String userId;
   const _VipPlayerCard({
     required this.name,
     required this.gameName,
@@ -802,7 +808,23 @@ class _VipPlayerCard extends StatelessWidget {
     required this.tags,
     required this.isOnline,
     required this.isGray,
+    required this.userId,
   });
+
+  Future<Uint8List?> fetchAvatarBytes(String userId) async {
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        return Uint8List.fromList(response.data);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -824,7 +846,7 @@ class _VipPlayerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ảnh đại diện (icon thay thế)
+          // Ảnh đại diện (avatar)
           Container(
             height: 120,
             width: double.infinity,
@@ -836,7 +858,26 @@ class _VipPlayerCard extends StatelessWidget {
               ),
             ),
             child: Center(
-              child: Icon(Icons.person, size: 72, color: isGray ? Colors.grey : Colors.deepOrange),
+              child: FutureBuilder<Uint8List?>(
+                future: fetchAvatarBytes(userId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange),
+                    );
+                  }
+                  if (snapshot.hasData && snapshot.data != null) {
+                    return CircleAvatar(
+                      radius: 48,
+                      backgroundImage: MemoryImage(snapshot.data!),
+                      backgroundColor: Colors.transparent,
+                    );
+                  }
+                  return Icon(Icons.person, size: 72, color: isGray ? Colors.grey : Colors.deepOrange);
+                },
+              ),
             ),
           ),
           Padding(
