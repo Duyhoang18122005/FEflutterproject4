@@ -158,21 +158,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
     final file = pickedFile.path;
-    final token = await ApiService.storage.read(key: 'jwt');
-    final dio = Dio();
-    dio.options.headers['Authorization'] = 'Bearer $token';
-    final formData = FormData.fromMap({
+      final token = await ApiService.storage.read(key: 'jwt');
+      final dio = Dio();
+      dio.options.headers['Authorization'] = 'Bearer $token';
+      final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(file, filename: file.split('/').last),
-    });
+      });
     try {
       final response = await dio.post(
         'http://10.0.2.2:8080/api/auth/update/avatar',
         data: formData,
       );
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật avatar thành công!')),
-        );
+          );
         await _loadUserInfo(); // Reload lại avatar sau khi upload thành công
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -209,13 +209,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   GestureDetector(
                     onTap: _pickAndUploadAvatar,
                     child: CircleAvatar(
-                      radius: 54,
-                      backgroundColor: Colors.deepOrange[100],
+                    radius: 54,
+                    backgroundColor: Colors.deepOrange[100],
                       backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
                       child: avatarBytes == null
                         ? const Text(
-                            "🍄",
-                            style: TextStyle(fontSize: 54),
+                      "🍄",
+                      style: TextStyle(fontSize: 54),
                           )
                         : null,
                     ),

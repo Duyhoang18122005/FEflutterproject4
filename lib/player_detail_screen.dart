@@ -251,6 +251,12 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       barrierColor: Colors.black.withOpacity(0.8),
       builder: (_) {
         final controller = PageController(initialPage: initialIndex);
+        final pageNotifier = ValueNotifier<int>(initialIndex);
+        controller.addListener(() {
+          if (controller.page != null) {
+            pageNotifier.value = controller.page!.round();
+          }
+        });
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(12),
@@ -276,10 +282,9 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 bottom: 16,
                 left: 0, right: 0,
                 child: Center(
-                  child: ValueListenableBuilder(
-                    valueListenable: controller,
-                    builder: (context, PageController value, _) {
-                      int page = value.hasClients ? value.page?.round() ?? 0 : 0;
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: pageNotifier,
+                    builder: (context, page, _) {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(

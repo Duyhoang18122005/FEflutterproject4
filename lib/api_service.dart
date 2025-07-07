@@ -1022,4 +1022,19 @@ class ApiService {
     }
     return [];
   }
+
+  static Future<Map<String, dynamic>?> getOrderReview(String orderId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return null;
+  }
 }

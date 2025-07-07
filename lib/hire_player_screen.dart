@@ -225,11 +225,17 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
                       children: [
                         const Icon(Icons.account_balance_wallet, color: Color(0xFFFFA726), size: 22),
                         const SizedBox(width: 8),
-                        Text('Số dư:', style: TextStyle(fontSize: 15, color: Colors.grey[700])),
+                        Flexible(
+                          child: Text('Số dư:', style: TextStyle(fontSize: 15, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
                         const SizedBox(width: 4),
-                        Text(
-                          walletBalance != null ? formatXu(walletBalance) : '...',
-                          style: TextStyle(color: Colors.grey[800], fontSize: 17, fontWeight: FontWeight.bold),
+                        Flexible(
+                          child: Text(
+                            walletBalance != null ? formatXu(walletBalance) : '...',
+                            style: TextStyle(color: Colors.grey[800], fontSize: 17, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -254,9 +260,18 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
                       children: [
                         const Icon(Icons.calculate, color: Color(0xFFFFA726), size: 22),
                         const SizedBox(width: 8),
-                        Text('Cần:', style: TextStyle(fontSize: 15, color: Colors.grey[700])),
+                        Flexible(
+                          child: Text('Cần:', style: TextStyle(fontSize: 15, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
                         const SizedBox(width: 4),
-                        Text(formatXu(totalCoin), style: TextStyle(fontSize: 17, color: Colors.grey[800], fontWeight: FontWeight.bold)),
+                        Flexible(
+                          child: Text(
+                            formatXu(totalCoin),
+                            style: TextStyle(fontSize: 17, color: Colors.grey[800], fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),

@@ -544,18 +544,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: games.map<Widget>((game) {
-                        IconData iconData = Icons.sports_esports;
-                        final name = (game['name'] ?? '').toLowerCase();
-                        if (name.contains('pubg') && name.contains('mobile')) {
-                          iconData = Icons.sports_motorsports;
-                        } else if (name.contains('pubg')) {
-                          iconData = Icons.sports_esports;
-                        } else if (name.contains('liên quân')) {
-                          iconData = Icons.sports_handball;
-                        }
                         return _GameIcon(
                           title: game['name'] ?? '',
-                          icon: iconData,
+                          imageUrl: game['imageUrl'] ?? '',
                         );
                       }).toList(),
                     ),
@@ -748,8 +739,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _GameIcon extends StatelessWidget {
   final String title;
-  final IconData icon;
-  const _GameIcon({required this.title, required this.icon});
+  final String imageUrl;
+  const _GameIcon({required this.title, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -772,9 +763,19 @@ class _GameIcon extends StatelessWidget {
               ],
             ),
             child: CircleAvatar(
-              child: Icon(icon, size: 32, color: Colors.deepOrange),
               backgroundColor: Colors.white,
               radius: 28,
+              child: ClipOval(
+                child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.sports_esports, size: 32, color: Colors.deepOrange),
+                    )
+                  : Icon(Icons.sports_esports, size: 32, color: Colors.deepOrange),
+              ),
             ),
           ),
           const SizedBox(height: 6),

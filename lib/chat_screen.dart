@@ -91,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[messages.length - 1 - index];
-                      final isMe = msg['senderId'] == widget.user['id'];
+                      final isMe = msg['senderId'].toString() == widget.user['id'].toString();
                       return Align(
                         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
