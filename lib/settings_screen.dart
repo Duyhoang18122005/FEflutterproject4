@@ -14,6 +14,9 @@ import 'orders_screen.dart';
 import 'user_given_reviews_screen.dart';
 import 'package:http_parser/http_parser.dart';
 import 'dart:typed_data';
+import 'player_reward_screen.dart';
+import 'dart:io' as io;
+import 'package:http/http.dart' as http;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -35,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   Uint8List? avatarBytes;
+  Uint8List? coverImageBytes;
 
   @override
   void initState() {
@@ -42,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadUserInfo();
     _loadWalletBalance();
     _checkIsPlayer();
+    _loadCoverImage();
   }
 
   @override
@@ -82,6 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         avatarBytes = bytes;
         isLoading = false;
       });
+      _loadCoverImage(); // Gọi lại sau khi đã có userId
     }
   }
 
@@ -107,6 +113,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
           playerId = null;
         }
       });
+    }
+  }
+
+  Future<Uint8List?> fetchCoverImageBytes(String userId) async {
+    final token = await ApiService.storage.read(key: 'jwt');
+    final response = await Dio().get(
+      'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
+    if (response.statusCode == 200) {
+      return Uint8List.fromList(response.data);
+    }
+    return null;
+  }
+
+  Future<void> _loadCoverImage() async {
+    if (userId.isEmpty) return;
+    final bytes = await fetchCoverImageBytes(userId);
+    if (mounted) {
+      setState(() {
+        coverImageBytes = bytes;
+      });
+    }
+  }
+
+  Future<void> _pickAndUploadCover() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+    final file = pickedFile.path;
+    final url = await ApiService.uploadCoverImage(file);
+    if (url != null && mounted) {
+      setState(() {
+        // coverImageUrl = url; // Xóa mọi dòng có coverImageUrl, chỉ giữ lại coverImageBytes cho ảnh bìa
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật ảnh bìa thành công!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lỗi khi cập nhật ảnh bìa!')),
+      );
     }
   }
 
@@ -158,32 +208,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
     final file = pickedFile.path;
-      final token = await ApiService.storage.read(key: 'jwt');
-      final dio = Dio();
-      dio.options.headers['Authorization'] = 'Bearer $token';
-      final formData = FormData.fromMap({
+    final token = await ApiService.storage.read(key: 'jwt');
+    final dio = Dio();
+    dio.options.headers['Authorization'] = 'Bearer $token';
+    final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(file, filename: file.split('/').last),
-      });
+    });
     try {
       final response = await dio.post(
         'http://10.0.2.2:8080/api/auth/update/avatar',
         data: formData,
       );
       if (response.statusCode == 200) {
-          ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cập nhật avatar thành công!')),
-          );
+        );
         await _loadUserInfo(); // Reload lại avatar sau khi upload thành công
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi:  ̷${response.statusMessage}')),
+          SnackBar(content: Text('Lỗi:  ̷ ${response.statusMessage}')),
         );
       }
     } on DioError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi upload avatar: ${e.response?.data ?? e.toString()}')),
+        SnackBar(content: Text('Lỗi upload avatar:  ${e.response?.data ?? e.toString()}')),
       );
     }
+  }
+
+  String? getFullUrl(String? path) {
+    if (path == null) return null;
+    if (path.startsWith('http')) return path;
+    return 'http://10.0.2.2:8080/$path';
   }
 
   @override
@@ -201,40 +257,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 24),
-              // Avatar + nút đổi avatar
+              // Cover photo + avatar
               Stack(
-                alignment: Alignment.bottomRight,
+                clipBehavior: Clip.none,
                 children: [
-                  GestureDetector(
-                    onTap: _pickAndUploadAvatar,
-                    child: CircleAvatar(
-                    radius: 54,
-                    backgroundColor: Colors.deepOrange[100],
-                      backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
-                      child: avatarBytes == null
-                        ? const Text(
-                      "🍄",
-                      style: TextStyle(fontSize: 54),
+                  // Ảnh bìa
+                  Container(
+                    width: double.infinity,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(0),
+                        topRight: Radius.circular(0),
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: coverImageBytes != null
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(24),
+                              bottomRight: Radius.circular(24),
+                            ),
+                            child: Image.memory(
+                              coverImageBytes!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 160,
+                            ),
                           )
-                        : null,
+                        : Center(child: Icon(Icons.image, size: 64, color: Colors.grey[400])),
+                  ),
+                  // Nút đổi ảnh bìa
+                  Positioned(
+                    top: 16,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: _pickAndUploadCover,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.deepOrange,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                      ),
                     ),
                   ),
+                  // Avatar giữ nguyên như trước
                   Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.deepOrange,
-                        borderRadius: BorderRadius.circular(16),
+                    left: 0,
+                    right: 0,
+                    bottom: -44,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: _pickAndUploadAvatar,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 44,
+                            backgroundColor: Colors.white,
+                            backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                            child: avatarBytes == null
+                                ? Icon(Icons.person, size: 44, color: Colors.deepOrange)
+                                : null,
+                          ),
+                        ),
                       ),
-                      padding: const EdgeInsets.all(4),
-                      child: const Icon(Icons.add_a_photo, color: Colors.white, size: 20),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 56),
               // Thông tin
               Padding(
                 padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -291,6 +410,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.star,
                         label: 'Đánh giá',
                         color: Colors.amber,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        if (playerId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlayerRewardScreen(playerId: playerId!),
+                            ),
+                          );
+                        }
+                      },
+                      child: _SettingRow(
+                        icon: Icons.card_giftcard,
+                        label: 'Thưởng',
+                        color: Colors.pinkAccent,
                       ),
                     ),
                     const SizedBox(height: 8),

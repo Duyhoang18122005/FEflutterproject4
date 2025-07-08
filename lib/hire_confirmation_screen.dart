@@ -588,36 +588,26 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                       )
                     else if (orderStatus == 'CONFIRMED')
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(18),
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Column(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.verified_rounded, color: Colors.green, size: 48),
-                              SizedBox(height: 10),
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green, size: 24),
+                              SizedBox(width: 8),
                               Text(
                                 'Đơn đã hoàn thành',
                                 style: TextStyle(
-                                  color: Colors.green,
+                                  color: Colors.green[800],
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 20,
+                                  fontSize: 18,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Cảm ơn bạn đã sử dụng dịch vụ!',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 15,
-                                ),
-                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
@@ -661,6 +651,7 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                                     playerAvatarUrl: playerAvatarUrl,
                                     playerRank: playerRank,
                                     game: game,
+                                    orderId: widget.orderId, // Truyền orderId
                                   ),
                                 ),
                               );
@@ -674,9 +665,41 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                         ),
                       )
                     else
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: Text('Đơn đã hoàn thành', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
+                              SizedBox(height: 10),
+                              Text(
+                                'Đơn đã hoàn thành',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Cảm ơn bạn đã sử dụng dịch vụ!',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 15,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                   ],
                 ],

@@ -613,7 +613,7 @@ class ApiService {
         return error['message'] ?? 'Cập nhật thất bại';
       }
     } catch (e) {
-      return 'Lỗi: [31m${e.toString()}[0m';
+      return 'Lỗi:  [31m${e.toString()} [0m';
     }
   }
 
@@ -1034,6 +1034,85 @@ class ApiService {
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>?> fetchPlayerRewardStatus(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/player-rewards/status/$playerId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return Map<String, dynamic>.from(jsonDecode(response.body));
+    }
+    return null;
+  }
+
+  static Future<List<dynamic>?> fetchPlayerRewardHistory(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/player-rewards/history/$playerId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return List<dynamic>.from(jsonDecode(response.body));
+    }
+    return null;
+  }
+
+  static Future<String?> uploadCoverImage(String filePath) async {
+    final token = await storage.read(key: 'jwt');
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://10.0.2.2:8080/api/auth/update/cover-image'),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    final response = await request.send();
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final data = jsonDecode(respStr);
+      return data['coverImageUrl'] as String?;
+    }
+    return null;
+  }
+
+  static Future<String?> fetchCoverImageUrl(String userId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/auth/me'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['coverImageUrl'] as String?;
+    }
+    return null;
+  }
+
+  static Future<String?> fetchUserCoverImageUrl(String userId) async {
+    final token = await storage.read(key: 'jwt');
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8080/api/users/$userId/cover-image'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['coverImageUrl'] as String?;
     }
     return null;
   }
