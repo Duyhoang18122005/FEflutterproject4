@@ -17,6 +17,7 @@ import 'dart:typed_data';
 import 'player_reward_screen.dart';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -232,6 +233,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on DioError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi upload avatar:  ${e.response?.data ?? e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _pickAndUploadPlayerGalleryImage() async {
+    if (playerId == null) return;
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+    final file = pickedFile.path;
+    final success = await ApiService.uploadPlayerGalleryImage(playerId!, file);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tải ảnh lên kho thành công!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lỗi khi tải ảnh lên kho!')),
+      );
+    }
+  }
+
+  Future<void> _pickAndUploadMultipleImages() async {
+    if (playerId == null) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result == null || result.paths.isEmpty) return;
+    int successCount = 0;
+    for (final filePath in result.paths.whereType<String>()) {
+      final success = await ApiService.uploadPlayerGalleryImage(playerId!, filePath);
+      if (success) successCount++;
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã tải lên $successCount/${result.paths.length} ảnh!')),
       );
     }
   }
@@ -499,7 +536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     if (isPlayer)
                       GestureDetector(
-                        onTap: _pickAndUploadAvatar,
+                        onTap: _pickAndUploadMultipleImages,
                         child: _SettingRow(
                           icon: Icons.cloud_upload,
                           label: 'Tải ảnh lên',

@@ -551,7 +551,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       }).toList(),
                     ),
                   ),
-                  // VIP Player hoặc Kết quả tìm kiếm
+                  // Tất cả player
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                     child: Row(
@@ -559,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(Icons.movie_filter, color: Colors.deepOrange, size: 22),
                         const SizedBox(width: 8),
                         Text(
-                          isSearching && searchController.text.isNotEmpty ? 'Kết quả tìm kiếm' : 'VIP Player',
+                          isSearching && searchController.text.isNotEmpty ? 'Kết quả tìm kiếm' : 'Tất cả player',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepOrange),
                         ),
                       ],
@@ -704,6 +704,61 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
+// Thêm section cho từng game
+                  for (final game in games) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.sports_esports, color: Colors.deepOrange, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Player game ${game['name']}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepOrange),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 360,
+                      child: Builder(
+                        builder: (context) {
+                          final gamePlayers = players.where((player) => player['game']?['id'] == game['id']).toList();
+                          if (gamePlayers.isEmpty) {
+                            return const Center(child: Text('Chưa có player nào cho game này'));
+                          }
+                          return ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            children: gamePlayers.map<Widget>((player) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PlayerDetailScreen(player: player),
+                                    ),
+                                  );
+                                },
+                                child: _VipPlayerCard(
+                                  name: player['username'] ?? '',
+                                  gameName: player['game']?['name'] ?? '',
+                                  price: _formatXuPerHour(player['pricePerHour']),
+                                  description: player['description'] ?? '',
+                                  tags: 'Rank: ${player['rank'] ?? ''}\nRole: ${player['role'] ?? ''}\nServer: ${player['server'] ?? ''}',
+                                  isOnline: player['status'] == 'AVAILABLE',
+                                  isGray: false,
+                                  userId: player['user']?['id']?.toString() ?? '',
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ],
               ),
             ),
@@ -827,6 +882,21 @@ class _VipPlayerCard extends StatelessWidget {
     }
   }
 
+  Future<Uint8List?> fetchCoverImageBytes(String userId) async {
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        return Uint8List.fromList(response.data);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -844,107 +914,177 @@ class _VipPlayerCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Ảnh đại diện (avatar)
-          Container(
-            height: 120,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: isGray ? Colors.grey[300] : Colors.orange[100],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-            ),
-            child: Center(
-              child: FutureBuilder<Uint8List?>(
-                future: fetchAvatarBytes(userId),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange),
-                    );
-                  }
-                  if (snapshot.hasData && snapshot.data != null) {
-                    return CircleAvatar(
-                      radius: 48,
-                      backgroundImage: MemoryImage(snapshot.data!),
-                      backgroundColor: Colors.transparent,
-                    );
-                  }
-                  return Icon(Icons.person, size: 72, color: isGray ? Colors.grey : Colors.deepOrange);
-                },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.deepOrange),
-                    overflow: TextOverflow.ellipsis,
+          // Cover image (ảnh bìa)
+          FutureBuilder<Uint8List?>(
+            future: fetchCoverImageBytes(userId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  height: 100,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isGray ? Colors.grey[300] : Colors.orange[100],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange)),
+                );
+              }
+              if (snapshot.hasData && snapshot.data != null) {
+                return ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  child: Image.memory(
+                    snapshot.data!,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              }
+              return Container(
+                height: 100,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isGray ? Colors.grey[300] : Colors.orange[100],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
                 ),
-                if (isOnline)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(Icons.circle, color: Colors.green, size: 16),
-                  ),
-              ],
+                child: Icon(Icons.image, size: 48, color: Colors.grey[400]),
+              );
+            },
+          ),
+          // Avatar chồng lên cover image
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 70,
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: FutureBuilder<Uint8List?>(
+                  future: fetchAvatarBytes(userId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircleAvatar(
+                        radius: 36,
+                        backgroundColor: Colors.white,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange),
+                      );
+                    }
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return CircleAvatar(
+                        radius: 36,
+                        backgroundImage: MemoryImage(snapshot.data!),
+                        backgroundColor: Colors.transparent,
+                      );
+                    }
+                    return CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person, size: 36, color: isGray ? Colors.grey : Colors.deepOrange),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-            child: Text(
-              gameName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-            child: Text(
-              description,
-              style: const TextStyle(fontSize: 15),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
+          // Nội dung card
+          Positioned.fill(
+            top: 130,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (tags.contains('Rank:'))
-                    Text(tags.split('\n').firstWhere((e) => e.contains('Rank:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                  if (tags.contains('Role:'))
-                    Text(tags.split('\n').firstWhere((e) => e.contains('Role:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                  if (tags.contains('Server:'))
-                    Text(tags.split('\n').firstWhere((e) => e.contains('Server:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                price,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.deepOrange),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isOnline)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 6),
+                              child: Icon(Icons.circle, color: Colors.green, size: 16),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      child: Text(
+                        gameName,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      child: Text(
+                        description,
+                        style: const TextStyle(fontSize: 15),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (tags.contains('Rank:'))
+                            Text(tags.split('\n').firstWhere((e) => e.contains('Rank:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                          if (tags.contains('Role:'))
+                            Text(tags.split('\n').firstWhere((e) => e.contains('Role:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                          if (tags.contains('Server:'))
+                            Text(tags.split('\n').firstWhere((e) => e.contains('Server:'), orElse: () => ''), style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          price,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

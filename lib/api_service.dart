@@ -1116,4 +1116,18 @@ class ApiService {
     }
     return null;
   }
+
+  static Future<bool> uploadPlayerGalleryImage(String playerId, String filePath) async {
+    final token = await storage.read(key: 'jwt');
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://10.0.2.2:8080/api/game-players/$playerId/images'),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    final response = await request.send();
+    final respStr = await response.stream.bytesToString();
+    print('UPLOAD status:  [33m${response.statusCode} [0m, body: $respStr');
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
 }

@@ -7,6 +7,10 @@ import 'utils/notification_helper.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
+String fixImageUrl(String url) {
+  return url.replaceFirst('localhost', '10.0.2.2');
+}
+
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
@@ -681,7 +685,7 @@ class _PlayerReviewsTabState extends State<_PlayerReviewsTab> {
                   children: [
                     CircleAvatar(
                       backgroundImage: (review['reviewerAvatar'] != null && review['reviewerAvatar'].toString().isNotEmpty)
-                          ? NetworkImage(review['reviewerAvatar'])
+                          ? NetworkImage(fixImageUrl(review['reviewerAvatar']))
                           : null,
                       backgroundColor: Colors.deepOrange.shade50,
                       child: (review['reviewerAvatar'] == null || review['reviewerAvatar'].toString().isEmpty)
