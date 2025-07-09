@@ -79,10 +79,12 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   Uint8List? avatarBytes;
   int? totalHireHours;
   bool isLoadingHireHours = true;
+  Uint8List? coverImageBytes;
 
   @override
   void initState() {
     super.initState();
+    _loadCoverImage();
     _loadStats();
     _checkFollowing();
     _loadRatingSummary();
@@ -211,6 +213,22 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     } catch (_) {
       setState(() { isLoadingHireHours = false; });
     }
+  }
+
+  Future<void> _loadCoverImage() async {
+    final userId = widget.player['user']?['id']?.toString();
+    if (userId == null) return;
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          coverImageBytes = Uint8List.fromList(response.data);
+        });
+      }
+    } catch (_) {}
   }
 
   Widget _buildPlayerInfo(Map<String, dynamic> player) {
@@ -378,37 +396,59 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Avatar, tên, trạng thái
+            // Ảnh bìa + avatar
             Stack(
-              alignment: Alignment.center,
+              clipBehavior: Clip.none,
               children: [
+                // Ảnh bìa
                 Container(
-                  height: 120,
+                  width: double.infinity,
+                  height: 140,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
+                    color: Colors.grey[200],
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(32),
                       bottomRight: Radius.circular(32),
                     ),
                   ),
+                  child: coverImageBytes != null
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
+                          ),
+                          child: Image.memory(
+                            coverImageBytes!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 140,
+                          ),
+                        )
+                      : Center(child: Icon(Icons.image, size: 64, color: Colors.grey[400])),
                 ),
+                // Avatar chồng lên ảnh bìa
                 Positioned(
-                  top: 24,
-                  child: CircleAvatar(
-                    radius: 56,
-                    backgroundColor: const Color(0xFFFFF3E0),
+                  left: 0,
+                  right: 0,
+                  top: 90,
+                  child: Center(
                     child: CircleAvatar(
-                      radius: 52,
-                      backgroundColor: const Color(0xFFFFE0B2),
-                      backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
-                      child: avatarBytes == null
-                        ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
-                        : null,
+                      radius: 56,
+                      backgroundColor: const Color(0xFFFFF3E0),
+                      child: CircleAvatar(
+                        radius: 52,
+                        backgroundColor: const Color(0xFFFFE0B2),
+                        backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                        child: avatarBytes == null
+                            ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
+                            : null,
+                      ),
                     ),
                   ),
                 ),
+                // Online indicator giữ nguyên nếu có
                 Positioned(
-                  top: 100,
+                  top: 170,
                   right: MediaQuery.of(context).size.width / 2 - 56 - 16,
                   child: CircleAvatar(
                     radius: 10,
@@ -418,7 +458,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 56),
             Text(
               player['username'] ?? '',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.grey[800]),

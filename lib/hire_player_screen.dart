@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/notification_helper.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 
 class HirePlayerScreen extends StatefulWidget {
   final Map<String, dynamic> player;
@@ -25,12 +27,16 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
   String? token;
   final baseUrl = 'http://10.0.2.2:8080';
   int? userId;
+  Uint8List? avatarBytes;
+  Uint8List? coverImageBytes;
 
   @override
   void initState() {
     super.initState();
     _loadWalletBalance();
     _loadUserInfo();
+    _loadAvatar();
+    _loadCoverImage();
   }
 
   Future<void> _loadUserInfo() async {
@@ -47,6 +53,38 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
       walletBalance = balance;
       isLoading = false;
     });
+  }
+
+  Future<void> _loadAvatar() async {
+    final userId = widget.player['user']?['id']?.toString();
+    if (userId == null) return;
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          avatarBytes = Uint8List.fromList(response.data);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadCoverImage() async {
+    final userId = widget.player['user']?['id']?.toString();
+    if (userId == null) return;
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          coverImageBytes = Uint8List.fromList(response.data);
+        });
+      }
+    } catch (_) {}
   }
 
   int get totalHours {
@@ -145,10 +183,21 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              height: 90,
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
                 borderRadius: BorderRadius.circular(24),
+                image: coverImageBytes != null
+                    ? DecorationImage(
+                        image: MemoryImage(coverImageBytes!),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.12),
+                          BlendMode.darken,
+                        ),
+                      )
+                    : null,
+                color: const Color(0xFFFFF8E1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.orange.withOpacity(0.06),
@@ -158,49 +207,50 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
                 ],
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  const SizedBox(width: 12),
                   CircleAvatar(
-                    radius: 36,
-                    backgroundColor: const Color(0xFFFFE0B2),
-                    child: const Icon(Icons.person, size: 40, color: Color(0xFFFFA726)),
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                    child: avatarBytes == null
+                        ? Icon(Icons.person, size: 28, color: Colors.deepOrange)
+                        : null,
                   ),
-                  const SizedBox(width: 18),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Text(
+                      widget.player['username'] ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black26)],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              widget.player['username'] ?? '',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.grey[800]),
-                            ),
-                            const SizedBox(width: 8),
-
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFFFFB74D), Color(0xFFFFE082)]),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.monetization_on, color: Colors.white, size: 18),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${formatXu(widget.player['pricePerHour'])} xu/h',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                        const Icon(Icons.attach_money, color: Colors.white, size: 16),
+                        Text(
+                          '${formatXu(widget.player['pricePerHour'])} xu/h',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),

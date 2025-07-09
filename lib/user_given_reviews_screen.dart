@@ -35,6 +35,12 @@ class _UserGivenReviewsScreenState extends State<UserGivenReviewsScreen> {
     }
   }
 
+  String fixImageUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    return 'http://10.0.2.2:8080/$path';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,7 +85,7 @@ class _UserGivenReviewsScreenState extends State<UserGivenReviewsScreen> {
                                   children: [
                                     CircleAvatar(
                                       backgroundImage: (review['playerAvatar'] != null && review['playerAvatar'].toString().isNotEmpty)
-                                          ? NetworkImage(review['playerAvatar'])
+                                          ? NetworkImage(fixImageUrl(review['playerAvatar']))
                                           : null,
                                       backgroundColor: Colors.deepOrange.shade50,
                                       child: (review['playerAvatar'] == null || review['playerAvatar'].toString().isEmpty)

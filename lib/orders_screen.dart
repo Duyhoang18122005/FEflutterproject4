@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'api_service.dart';
 import 'hire_confirmation_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({Key? key}) : super(key: key);
+  const OrdersScreen({super.key});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -11,16 +12,35 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   List<dynamic> orders = [];
+  List<dynamic> filteredOrders = [];
   bool isLoading = true;
   String? error;
+
+  // Bộ lọc
+  String? filterStatus;
+  String? filterType;
+  DateTime? filterFromDate;
+  DateTime? filterToDate;
+
+  // Sửa danh sách trạng thái và loại đơn thành list map value-label
+  final List<Map<String, String>> statusList = [
+    {'value': 'COMPLETED', 'label': 'Đã hoàn thành'},
+    {'value': 'CANCELLED', 'label': 'Đã huỷ'},
+    {'value': 'PENDING', 'label': 'Chờ xác nhận'},
+    {'value': 'IN_PROGRESS', 'label': 'Đang thực hiện'},
+  ];
+  final List<Map<String, String>> typeList = [
+    {'value': 'HIRED', 'label': 'Tôi thuê'},
+    {'value': 'HIREE', 'label': 'Tôi được thuê'},
+  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchOrders();
+    _loadOrders();
   }
 
-  Future<void> _fetchOrders() async {
+  Future<void> _loadOrders() async {
     setState(() { isLoading = true; error = null; });
     try {
       final user = await ApiService.getCurrentUser();
@@ -33,6 +53,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       setState(() {
         orders = fetchedOrders ?? [];
         isLoading = false;
+        filteredOrders = orders;
       });
     } catch (e) {
       setState(() {
@@ -40,6 +61,211 @@ class _OrdersScreenState extends State<OrdersScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        DateTime? tempFrom = filterFromDate;
+        DateTime? tempTo = filterToDate;
+        String? tempStatus = filterStatus;
+        String? tempType = filterType;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const Text('Bộ lọc đơn hàng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                    const SizedBox(height: 20),
+                    // Trạng thái
+                    DropdownButtonFormField<String>(
+                      value: tempStatus,
+                      decoration: InputDecoration(
+                        labelText: 'Trạng thái',
+                        prefixIcon: const Icon(Icons.info, color: Colors.deepOrange),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        filled: true,
+                        fillColor: Colors.orange[50],
+                      ),
+                      items: [const DropdownMenuItem<String>(value: null, child: Text('Tất cả'))] +
+                        statusList.map((s) => DropdownMenuItem<String>(value: s['value'], child: Text(s['label']!))).toList(),
+                      onChanged: (v) => setModalState(() => tempStatus = v),
+                      isExpanded: true,
+                    ),
+                    const SizedBox(height: 14),
+                    // Loại đơn
+                    DropdownButtonFormField<String>(
+                      value: tempType,
+                      decoration: InputDecoration(
+                        labelText: 'Loại đơn',
+                        prefixIcon: const Icon(Icons.category, color: Colors.blue),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        filled: true,
+                        fillColor: Colors.orange[50],
+                      ),
+                      items: [const DropdownMenuItem<String>(value: null, child: Text('Tất cả'))] +
+                        typeList.map((s) => DropdownMenuItem<String>(value: s['value'], child: Text(s['label']!))).toList(),
+                      onChanged: (v) => setModalState(() => tempType = v),
+                      isExpanded: true,
+                    ),
+                    const SizedBox(height: 14),
+                    // Thời gian
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: tempFrom ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) setModalState(() => tempFrom = picked);
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Từ ngày',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                filled: true,
+                                fillColor: Colors.orange[50],
+                              ),
+                              child: Text(tempFrom != null ? DateFormat('dd/MM/yyyy').format(tempFrom!) : 'Chọn'),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: tempTo ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) setModalState(() => tempTo = picked);
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Đến ngày',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                filled: true,
+                                fillColor: Colors.orange[50],
+                              ),
+                              child: Text(tempTo != null ? DateFormat('dd/MM/yyyy').format(tempTo!) : 'Chọn'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                filterStatus = null;
+                                filterType = null;
+                                filterFromDate = null;
+                                filterToDate = null;
+                                filteredOrders = orders;
+                              });
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.clear, color: Colors.black),
+                            label: const Text('Xóa lọc', style: TextStyle(color: Colors.black)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[200],
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                filterStatus = tempStatus;
+                                filterType = tempType;
+                                filterFromDate = tempFrom;
+                                filterToDate = tempTo;
+                                _applyOrderFilter();
+                              });
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.check_circle, color: Colors.white),
+                            label: const Text('Áp dụng', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepOrange,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Sửa hàm _applyOrderFilter để so sánh đúng key
+  void _applyOrderFilter() {
+    setState(() {
+      filteredOrders = orders.where((order) {
+        bool match = true;
+        if (filterStatus != null && filterStatus!.isNotEmpty) {
+          match &= (order['status'] == filterStatus);
+        }
+        if (filterType != null && filterType!.isNotEmpty) {
+          match &= (order['orderType'] == filterType);
+        }
+        if (filterFromDate != null) {
+          final orderDate = DateTime.tryParse(order['startTime'] ?? '') ?? DateTime(2000);
+          match &= orderDate.isAfter(filterFromDate!.subtract(const Duration(days: 1)));
+        }
+        if (filterToDate != null) {
+          final orderDate = DateTime.tryParse(order['endTime'] ?? '') ?? DateTime(2100);
+          match &= orderDate.isBefore(filterToDate!.add(const Duration(days: 1)));
+        }
+        return match;
+      }).toList();
+    });
   }
 
   @override
@@ -61,20 +287,26 @@ class _OrdersScreenState extends State<OrdersScreen> {
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.deepOrange),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_alt_outlined, color: Colors.deepOrange),
+            onPressed: _showFilterSheet,
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : error != null
               ? Center(child: Text(error!))
-              : orders.isEmpty
+              : filteredOrders.isEmpty
                   ? const Center(child: Text('Bạn chưa có đơn hàng nào.'))
                   : RefreshIndicator(
-                      onRefresh: _fetchOrders,
+                      onRefresh: _loadOrders,
                       child: ListView.separated(
-                        itemCount: orders.length,
+                        itemCount: filteredOrders.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final order = orders[index];
+                          final order = filteredOrders[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: GestureDetector(
@@ -154,8 +386,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                   ],
                                                 ),
                                                 const SizedBox(height: 4),
-                                                Text('Trạng thái: ${order['statusLabel']}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
-                                                Text('Loại đơn: ${order['orderType'] == 'HIRED' ? 'Tôi thuê' : 'Tôi được thuê'}', style: const TextStyle(fontSize: 13)),
+                                                // Khi hiển thị trạng thái và loại đơn, dùng label:
+                                                Text('Trạng thái: ${statusList.firstWhere((s) => s['value'] == order['status'], orElse: () => {'label': order['status']})['label']}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                                                Text('Loại đơn: ${typeList.firstWhere((t) => t['value'] == order['orderType'], orElse: () => {'label': order['orderType']})['label']}', style: const TextStyle(fontSize: 13)),
                                               ],
                                             ),
                                           ),

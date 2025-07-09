@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> player; // Thông tin người chơi
@@ -14,11 +16,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController messageController = TextEditingController();
   List<dynamic> messages = [];
   bool isLoading = false;
+  Uint8List? avatarBytes;
 
   @override
   void initState() {
     super.initState();
     loadConversation();
+    _loadAvatar();
   }
 
   Future<void> loadConversation() async {
@@ -45,6 +49,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _loadAvatar() async {
+    final userId = widget.player['user']['id'];
+    try {
+      final response = await Dio().get(
+        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          avatarBytes = Uint8List.fromList(response.data);
+        });
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = widget.player;
@@ -61,12 +80,8 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundImage: player['user']['avatarUrl'] != null
-                  ? NetworkImage(player['user']['avatarUrl'])
-                  : null,
-              child: player['user']['avatarUrl'] == null
-                  ? const Icon(Icons.person, color: Colors.deepOrange)
-                  : null,
+              backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+              child: avatarBytes == null ? const Icon(Icons.person, color: Colors.deepOrange) : null,
             ),
             const SizedBox(width: 12),
             Expanded(

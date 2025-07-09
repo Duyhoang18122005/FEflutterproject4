@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'chat_screen.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 
 class MessageListScreen extends StatefulWidget {
   const MessageListScreen({super.key});
@@ -54,8 +56,14 @@ class _MessageListScreenState extends State<MessageListScreen> {
                 final otherUserId = conv['conversationId'];
                 final title = conv['otherName'] ?? 'Người dùng #$otherUserId';
                 return ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.person, color: Colors.deepOrange),
+                  leading: FutureBuilder<Uint8List?>(
+                    future: fetchAvatarBytes(otherUserId),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return CircleAvatar(backgroundImage: MemoryImage(snapshot.data!));
+                      }
+                      return const CircleAvatar(child: Icon(Icons.person, color: Colors.deepOrange));
+                    },
                   ),
                   title: Text(title),
                   subtitle: Text(lastMessage['content'] ?? ''),
@@ -88,4 +96,17 @@ class _MessageListScreenState extends State<MessageListScreen> {
     if (diff.inMinutes > 0) return '${diff.inMinutes} phút trước';
     return 'Vừa xong';
   }
+}
+
+Future<Uint8List?> fetchAvatarBytes(int userId) async {
+  try {
+    final response = await Dio().get(
+      'http://10.0.2.2:8080/api/auth/avatar/$userId',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    if (response.statusCode == 200) {
+      return Uint8List.fromList(response.data);
+    }
+  } catch (_) {}
+  return null;
 } 
