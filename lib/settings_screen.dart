@@ -18,6 +18,7 @@ import 'player_reward_screen.dart';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'create_moment_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -450,22 +451,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    if (isPlayer)
+                      GestureDetector(
+                        onTap: () {
+                          if (playerId != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlayerRewardScreen(playerId: playerId!),
+                              ),
+                            );
+                          }
+                        },
+                        child: _SettingRow(
+                          icon: Icons.card_giftcard,
+                          label: 'Thưởng',
+                          color: Colors.pinkAccent,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () {
                         if (playerId != null) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PlayerRewardScreen(playerId: playerId!),
+                              builder: (context) => CreateMomentScreen(playerId: playerId!),
                             ),
                           );
                         }
                       },
-                      child: _SettingRow(
-                        icon: Icons.card_giftcard,
-                        label: 'Thưởng',
-                        color: Colors.pinkAccent,
-                      ),
+                      child: isPlayer
+                          ? _SettingRow(
+                              icon: Icons.camera_alt,
+                              label: 'Đăng khoảnh khắc',
+                              color: Colors.deepOrange,
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(

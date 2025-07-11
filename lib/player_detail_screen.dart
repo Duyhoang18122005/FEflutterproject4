@@ -8,7 +8,8 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 String fixImageUrl(String url) {
-  return url.replaceFirst('localhost', '10.0.2.2');
+  if (url.startsWith('http')) return url;
+  return 'http://10.0.2.2:8080/$url';
 }
 
 class _StatItem extends StatelessWidget {
@@ -381,6 +382,26 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     );
   }
 
+  void _showImageDialog(Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(8),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: InteractiveViewer(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.memory(imageBytes, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = widget.player;
@@ -412,16 +433,19 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                     ),
                   ),
                   child: coverImageBytes != null
-                      ? ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(32),
-                            bottomRight: Radius.circular(32),
-                          ),
-                          child: Image.memory(
-                            coverImageBytes!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: 140,
+                      ? GestureDetector(
+                          onTap: () => _showImageDialog(coverImageBytes!),
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(32),
+                              bottomRight: Radius.circular(32),
+                            ),
+                            child: Image.memory(
+                              coverImageBytes!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 140,
+                            ),
                           ),
                         )
                       : Center(child: Icon(Icons.image, size: 64, color: Colors.grey[400])),
@@ -432,16 +456,21 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                   right: 0,
                   top: 90,
                   child: Center(
-                    child: CircleAvatar(
-                      radius: 56,
-                      backgroundColor: const Color(0xFFFFF3E0),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (avatarBytes != null) _showImageDialog(avatarBytes!);
+                      },
                       child: CircleAvatar(
-                        radius: 52,
-                        backgroundColor: const Color(0xFFFFE0B2),
-                        backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
-                        child: avatarBytes == null
-                            ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
-                            : null,
+                        radius: 56,
+                        backgroundColor: const Color(0xFFFFF3E0),
+                        child: CircleAvatar(
+                          radius: 52,
+                          backgroundColor: const Color(0xFFFFE0B2),
+                          backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                          child: avatarBytes == null
+                              ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
+                              : null,
+                        ),
                       ),
                     ),
                   ),
@@ -653,6 +682,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
             ],
             if (selectedTab == 1)
               _PlayerReviewsTab(playerId: player['id'].toString()),
+            if (selectedTab == 2)
+              _PlayerMomentsTab(playerId: player['id'].toString()),
           ],
         ),
       ),
@@ -724,11 +755,13 @@ class _PlayerReviewsTabState extends State<_PlayerReviewsTab> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundImage: (review['reviewerAvatar'] != null && review['reviewerAvatar'].toString().isNotEmpty)
-                          ? NetworkImage(fixImageUrl(review['reviewerAvatar']))
-                          : null,
+                      backgroundImage: (review['playerAvatar'] != null && review['playerAvatar'].toString().isNotEmpty)
+                          ? NetworkImage(fixImageUrl(review['playerAvatar']))
+                          : (review['reviewerAvatar'] != null && review['reviewerAvatar'].toString().isNotEmpty)
+                              ? NetworkImage(fixImageUrl(review['reviewerAvatar']))
+                              : null,
                       backgroundColor: Colors.deepOrange.shade50,
-                      child: (review['reviewerAvatar'] == null || review['reviewerAvatar'].toString().isEmpty)
+                      child: ((review['playerAvatar'] == null || review['playerAvatar'].toString().isEmpty) && (review['reviewerAvatar'] == null || review['reviewerAvatar'].toString().isEmpty))
                           ? const Icon(Icons.person, color: Colors.deepOrange)
                           : null,
                     ),
@@ -760,6 +793,114 @@ class _PlayerReviewsTabState extends State<_PlayerReviewsTab> {
                     const SizedBox(width: 4),
                     Text(review['createdAt'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                   ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PlayerMomentsTab extends StatefulWidget {
+  final String playerId;
+  const _PlayerMomentsTab({required this.playerId});
+  @override
+  State<_PlayerMomentsTab> createState() => _PlayerMomentsTabState();
+}
+
+class _PlayerMomentsTabState extends State<_PlayerMomentsTab> {
+  List<dynamic> moments = [];
+  bool isLoading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMoments();
+  }
+
+  Future<void> _fetchMoments() async {
+    setState(() { isLoading = true; error = null; });
+    try {
+      final fetched = await ApiService.fetchPlayerMoments(widget.playerId);
+      setState(() {
+        moments = fetched;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        error = 'Lỗi khi tải khoảnh khắc: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(child: Text(error!));
+    }
+    if (moments.isEmpty) {
+      return const Center(child: Text('Chưa có khoảnh khắc nào.'));
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: moments.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemBuilder: (context, index) {
+        final moment = moments[index];
+        final imageUrl = (moment['imageUrls'] as List).isNotEmpty
+            ? 'http://10.0.2.2:8080/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
+            : null;
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          elevation: 3,
+          color: Colors.white,
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: imageUrl != null
+                      ? Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) => Container(
+                            height: 180,
+                            color: Colors.grey[200],
+                            child: const Center(child: Icon(Icons.broken_image, size: 60, color: Colors.grey)),
+                          ),
+                        )
+                      : Container(
+                          height: 180,
+                          color: Colors.grey[200],
+                          child: const Center(child: Icon(Icons.image, size: 60, color: Colors.grey)),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  moment['content'] ?? '',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    moment['createdAt'] ?? '',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
                 ),
               ],
             ),

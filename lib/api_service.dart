@@ -1130,4 +1130,58 @@ class ApiService {
     print('UPLOAD status:  [33m${response.statusCode} [0m, body: $respStr');
     return response.statusCode == 200 || response.statusCode == 201;
   }
+
+  static Future<bool> createMoment({
+    required String gamePlayerId,
+    required String content,
+    File? imageFile,
+  }) async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('http://10.0.2.2:8080/api/moments/$gamePlayerId/upload');
+    var request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['content'] = content;
+    if (imageFile != null) {
+      request.files.add(await http.MultipartFile.fromPath('imageFile', imageFile.path));
+    }
+    final response = await request.send();
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    }
+    return false;
+  }
+
+  static Future<List<dynamic>> fetchPlayerMoments(String playerId) async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('http://10.0.2.2:8080/api/moments/player/$playerId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['content'] as List;
+    }
+    return [];
+  }
+
+  static Future<List<dynamic>> fetchAllMoments({int page = 0, int size = 20}) async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('http://10.0.2.2:8080/api/moments/all?page=$page&size=$size');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['content'] as List;
+    }
+    return [];
+  }
 }

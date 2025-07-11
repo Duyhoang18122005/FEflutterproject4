@@ -10,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'explore_screen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
@@ -168,7 +169,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   static const List<Widget> _screens = <Widget>[
     HomeScreen(),
-    Placeholder(), // CommunityScreen(),
+    ExploreScreen(), // Thay thế Placeholder bằng trang khám phá
     MessageListScreen(), // Chat tab
     NotificationScreen(), // Notification tab: tất cả thông báo (trừ tin nhắn)
     SettingsScreen(),
@@ -192,7 +193,7 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'PD',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.explore), // Đổi icon khám phá
             label: 'Khám Phá',
           ),
           BottomNavigationBarItem(
