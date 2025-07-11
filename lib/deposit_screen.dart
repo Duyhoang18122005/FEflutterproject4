@@ -312,6 +312,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     'Nạp xu ngay',
                     style: TextStyle(
                       fontSize: 16,
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
