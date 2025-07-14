@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 class NotificationHelper {
   static void showSuccess(BuildContext context, String message) {
+    // Ví dụ: message = 'Thao tác thành công!'
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -24,6 +25,7 @@ class NotificationHelper {
   }
 
   static void showError(BuildContext context, String message) {
+    // Ví dụ: message = 'Đã xảy ra lỗi, vui lòng thử lại!'
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -45,6 +47,7 @@ class NotificationHelper {
   }
 
   static void showWarning(BuildContext context, String message) {
+    // Ví dụ: message = 'Cảnh báo: Bạn chưa nhập đủ thông tin!'
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -66,6 +69,7 @@ class NotificationHelper {
   }
 
   static void showInfo(BuildContext context, String message) {
+    // Ví dụ: message = 'Đây là thông tin mới nhất.'
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -94,6 +98,7 @@ class NotificationHelper {
     String? confirmText,
     Color? confirmColor,
   }) {
+    // Ví dụ: title = 'Xác nhận', content = 'Bạn có chắc chắn muốn xóa?'
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -129,6 +134,7 @@ class NotificationHelper {
     BuildContext context, {
     String? message,
   }) {
+    // Ví dụ: message = 'Đang xử lý...'
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -150,6 +156,7 @@ class NotificationHelper {
   }
 
   void showPrettyError(BuildContext context, String title, String message) {
+    // Ví dụ: title = 'Lỗi', message = 'Không thể kết nối đến máy chủ.'
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.white,

@@ -159,6 +159,134 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
     }
   }
 
+  Widget buildStatusWidget({
+    required bool isCurrentUser,
+    required bool isOrderReviewed,
+    required String playerName,
+    required String playerAvatarUrl,
+    required String playerRank,
+    required String game,
+  }) {
+    if (orderStatus == 'COMPLETED') {
+      if (isCurrentUser && isOrderReviewed == false) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: SizedBox(
+            width: 180,
+            height: 48,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.star, color: Colors.white),
+              label: const Text(
+                'Đánh giá',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              ),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RatePlayerScreen(
+                      playerName: playerName,
+                      playerId: orderDetail?['playerId']?.toString() ?? '',
+                      playerAvatarUrl: playerAvatarUrl,
+                      playerRank: playerRank,
+                      game: game,
+                      orderId: widget.orderId, // Truyền orderId
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  setState(() {
+                    isOrderReviewed = true;
+                  });
+                }
+              },
+            ),
+          ),
+        );
+      } else {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
+                SizedBox(height: 10),
+                Text(
+                  'Đơn đã hoàn thành',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Cảm ơn bạn đã sử dụng dịch vụ!',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 15,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } else if (orderStatus == 'CONFIRMED') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.info_outline, color: Colors.blue, size: 48),
+              SizedBox(height: 10),
+              Text(
+                'Đơn đã xác nhận',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 6),
+              Text(
+                'Bạn sẽ được kết nối với người chơi để bắt đầu!',
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 15,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    // Có thể bổ sung các trạng thái khác nếu cần
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Lấy dữ liệu từ widget hoặc orderDetail nếu có
@@ -218,6 +346,26 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
       displayName = orderDetail?['playerName'] ?? '';
     }
 
+    // Lấy avatar đúng vai trò
+    String? avatarUrl;
+    if (isCurrentPlayer) {
+      // Nếu là player, hiển thị avatar user thuê (hirer)
+      avatarUrl = orderDetail?['hirerAvatar'];
+      if (avatarUrl == null && orderDetail?['hirerId'] != null) {
+        avatarUrl = 'http://10.0.2.2:8080/api/auth/avatar/${orderDetail?['hirerId']}';
+      }
+    } else {
+      // Nếu là user, hiển thị avatar player như cũ
+      avatarUrl = playerAvatarUrl;
+    }
+
+    // Thêm hàm fixImageUrl nếu chưa có
+    String fixImageUrl(String? url) {
+      if (url == null || url.isEmpty) return '';
+      if (url.startsWith('http')) return url;
+      return 'http://10.0.2.2:8080/$url';
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F9),
       appBar: AppBar(
@@ -253,10 +401,10 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                       children: [
                         CircleAvatar(
                           radius: 32,
-                          backgroundImage: (playerAvatarUrl.isNotEmpty && playerAvatarUrl != 'null')
-                              ? NetworkImage(playerAvatarUrl)
+                          backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl != 'null')
+                              ? NetworkImage(fixImageUrl(avatarUrl))
                               : null,
-                          child: (playerAvatarUrl.isEmpty || playerAvatarUrl == 'null')
+                          child: (avatarUrl == null || avatarUrl.isEmpty || avatarUrl == 'null')
                               ? const Icon(Icons.person, size: 36, color: Colors.deepOrange)
                               : null,
                         ),
@@ -402,306 +550,15 @@ class _HireConfirmationScreenState extends State<HireConfirmationScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  // Lưu ý/nút xác nhận/từ chối chỉ cho player
-                  if (isCurrentPlayer) ...[
-                    if (orderStatus == 'PENDING' || orderStatus == null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.deepOrange.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Lưu ý quan trọng', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange, fontSize: 17)),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                const Icon(Icons.timer, color: Colors.red, size: 22),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Bạn cần xác nhận đơn hàng trong vòng ${_formatDuration(remainingTime)} để tránh mất đơn',
-                                    style: const TextStyle(color: Colors.red, fontSize: 15, fontWeight: FontWeight.w600),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const Text('Nếu từ chối đơn, vui lòng cung cấp lý do để chúng tôi hỗ trợ khách hàng tốt hơn.', style: TextStyle(fontSize: 14)),
-                            const SizedBox(height: 6),
-                            const Text('Sau khi xác nhận, bạn sẽ được kết nối với khách hàng qua ứng dụng chat.', style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _rejectOrder,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.deepOrange,
-                                side: const BorderSide(color: Colors.deepOrange, width: 2),
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('TỪ CHỐI ĐƠN'),
-                            ),
-                          ),
-                          const SizedBox(width: 18),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _confirmOrder,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepOrange,
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('XÁC NHẬN ĐƠN'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ]
-                    else if (orderStatus == 'CONFIRMED') ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.check_circle_rounded, color: Colors.blue, size: 48),
-                              SizedBox(height: 10),
-                              Text(
-                                'Đơn đã được xác nhận',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Bạn sẽ được kết nối với người chơi để bắt đầu!',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 15,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ]
-                    else if (orderStatus == 'REJECTED') ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.cancel_rounded, color: Colors.red, size: 48),
-                              SizedBox(height: 10),
-                              Text(
-                                'Đơn đã bị hủy',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Rất tiếc, đơn hàng này đã bị hủy.',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 15,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ]
-                  ]
-                  // Nếu là user: chỉ hiện trạng thái đơn
-                  else ...[
-                    const SizedBox(height: 12),
-                    if (orderStatus == 'PENDING' || orderStatus == null)
-                      Column(
-                        children: [
-                          Center(
-                            child: Column(
-                              children: const [
-                                Icon(Icons.hourglass_empty, color: Colors.deepOrange, size: 64),
-                                SizedBox(height: 12),
-                                Text('Đơn đang chờ xác nhận', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 22)),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: _rejectOrder,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.red, width: 2),
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('HỦY ĐƠN'),
-                            ),
-                          ),
-                        ],
-                      )
-                    else if (orderStatus == 'CONFIRMED')
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'Đơn đã hoàn thành',
-                                style: TextStyle(
-                                  color: Colors.green[800],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else if (orderStatus == 'REJECTED')
-                      Center(
-                        child: Column(
-                          children: const [
-                            Icon(Icons.cancel, color: Colors.red, size: 64),
-                            SizedBox(height: 12),
-                            Text('Đơn đã bị hủy', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 22)),
-                          ],
-                        ),
-                      ),
-                  ],
-                  if (orderStatus == 'COMPLETED') ...[
-                    if (isCurrentUser && isOrderReviewed == false)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: SizedBox(
-                          width: 180,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.star, color: Colors.white),
-                            label: const Text(
-                              'Đánh giá',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepOrange,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                            ),
-                            onPressed: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => RatePlayerScreen(
-                                    playerName: playerName,
-                                    playerId: orderDetail?['playerId']?.toString() ?? '',
-                                    playerAvatarUrl: playerAvatarUrl,
-                                    playerRank: playerRank,
-                                    game: game,
-                                    orderId: widget.orderId, // Truyền orderId
-                                  ),
-                                ),
-                              );
-                              if (result == true) {
-                                setState(() {
-                                  isOrderReviewed = true;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
-                              SizedBox(height: 10),
-                              Text(
-                                'Đơn đã hoàn thành',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Cảm ơn bạn đã sử dụng dịch vụ!',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 15,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                  // Thêm widget trạng thái đơn hàng (chỉ 1 lần duy nhất)
+                  buildStatusWidget(
+                    isCurrentUser: isCurrentUser,
+                    isOrderReviewed: isOrderReviewed ?? false,
+                    playerName: playerName,
+                    playerAvatarUrl: playerAvatarUrl,
+                    playerRank: playerRank,
+                    game: game,
+                  ),
                 ],
               ),
             ),

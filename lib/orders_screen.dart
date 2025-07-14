@@ -15,6 +15,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<dynamic> filteredOrders = [];
   bool isLoading = true;
   String? error;
+  Map<String, dynamic>? _currentUser;
 
   // Bộ lọc
   String? filterStatus;
@@ -45,6 +46,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     try {
       final user = await ApiService.getCurrentUser();
       final userId = user?['id'];
+      _currentUser = user;
       if (userId == null) {
         setState(() { error = 'Không tìm thấy thông tin người dùng.'; isLoading = false; });
         return;
@@ -268,6 +270,35 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
   }
 
+  // Thêm hàm ánh xạ trạng thái và loại đơn sang tiếng Việt
+  String getStatusLabel(String? status) {
+    switch (status) {
+      case 'PENDING':
+        return 'Chờ xác nhận';
+      case 'CONFIRMED':
+        return 'Đã xác nhận';
+      case 'COMPLETED':
+        return 'Đã hoàn thành';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'HIRING':
+        return 'Đang thuê';
+      default:
+        return status ?? '';
+    }
+  }
+
+  String getOrderTypeLabel(String? type) {
+    switch (type) {
+      case 'HIRED':
+        return 'Tôi thuê';
+      case 'HIRING':
+        return 'Tôi được thuê';
+      default:
+        return type ?? '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -307,6 +338,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final order = filteredOrders[index];
+                          // Lấy avatar đúng vai trò
+                          String? avatarUrl;
+                          final isCurrentPlayer = _currentUser?['id'] != null && (_currentUser!['id'].toString() == order['playerId']?.toString());
+                          if (isCurrentPlayer) {
+                            avatarUrl = order['hirerAvatar'];
+                            if (avatarUrl == null && order['hirerId'] != null) {
+                              avatarUrl = 'http://10.0.2.2:8080/api/auth/avatar/${order['hirerId']}';
+                            }
+                          } else {
+                            avatarUrl = order['playerAvatarUrl'];
+                          }
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: GestureDetector(
@@ -340,6 +382,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
+                                          // Avatar đã bị loại bỏ theo yêu cầu
                                           Icon(Icons.event_note, color: Colors.deepOrange, size: 32),
                                           const SizedBox(width: 12),
                                           Expanded(
@@ -387,8 +430,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                 ),
                                                 const SizedBox(height: 4),
                                                 // Khi hiển thị trạng thái và loại đơn, dùng label:
-                                                Text('Trạng thái: ${statusList.firstWhere((s) => s['value'] == order['status'], orElse: () => {'label': order['status']})['label']}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
-                                                Text('Loại đơn: ${typeList.firstWhere((t) => t['value'] == order['orderType'], orElse: () => {'label': order['orderType']})['label']}', style: const TextStyle(fontSize: 13)),
+                                                Text('Trạng thái: ${getStatusLabel(order['status'])}', style: const TextStyle(fontSize: 13, color: Colors.deepOrange)),
+                                                Text('Loại đơn: ${getOrderTypeLabel(order['orderType'])}', style: const TextStyle(fontSize: 13)),
                                               ],
                                             ),
                                           ),
