@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'api_service.dart';
+import 'policy_screen.dart';
 
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   @override
@@ -60,6 +61,9 @@ class _RegisterPlayerScreenState extends State<RegisterPlayerScreen> {
     'Asia', 'VN', 'KR', 'NA', 'EU',
   ];
 
+  bool isPolicyAccepted = false;
+  bool showPolicyError = false;
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +118,56 @@ class _RegisterPlayerScreenState extends State<RegisterPlayerScreen> {
   }
 
   Future<void> handleRegister() async {
+    // Kiểm tra đã tick đồng ý chính sách chưa
+    if (!isPolicyAccepted) {
+      setState(() { showPolicyError = true; });
+      showErrorSnackBar('Bạn cần đồng ý với điều khoản và chính sách trước khi đăng ký.');
+      return;
+    }
+    setState(() { showPolicyError = false; });
+    // Hiện dialog điều khoản
+    final agreed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Điều khoản & Chính sách'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Điều Khoản Sử Dụng\n\n'
+                  '1. Tài khoản người dùng\n'
+                  'Để sử dụng đầy đủ các tính năng của PlayerDou, bạn cần đăng ký tài khoản với thông tin chính xác và cập nhật. '
+                  'Bạn chịu trách nhiệm bảo mật thông tin đăng nhập và mọi hoạt động diễn ra trên tài khoản của mình.\n\n'
+                  '2. Quy tắc ứng xử\n'
+                  'Người dùng phải tuân thủ các quy tắc ứng xử khi sử dụng dịch vụ. Nghiêm cấm các hành vi quấy rối, '
+                  'phân biệt đối xử, lăng mạ, đe dọa hoặc bất kỳ hành vi nào vi phạm pháp luật Việt Nam.\n\n'
+                  '3. Nội dung bị cấm\n'
+                  'Người dùng không được đăng tải, chia sẻ hoặc truyền tải nội dung bất hợp pháp, khiêu dâm, '
+                  'bạo lực, phỉ báng, xúc phạm hoặc vi phạm quyền sở hữu trí tuệ của người khác.\n\n'
+                  'Chúng tôi có quyền đình chỉ hoặc chấm dứt tài khoản của bạn nếu vi phạm bất kỳ điều khoản nào được nêu ở đây.',
+                  style: TextStyle(fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+            child: const Text('Đồng ý'),
+          ),
+        ],
+      ),
+    );
+    if (agreed != true) return;
     try {
       setState(() { errorMessage = null; });
       if (!_formKey.currentState!.validate()) {
@@ -519,6 +573,54 @@ class _RegisterPlayerScreenState extends State<RegisterPlayerScreen> {
                         ],
                       ),
                     ),
+                    // Thêm checkbox đồng ý chính sách
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: isPolicyAccepted,
+                          onChanged: (v) {
+                            setState(() {
+                              isPolicyAccepted = v ?? false;
+                              if (isPolicyAccepted) showPolicyError = false;
+                            });
+                          },
+                          activeColor: Colors.deepOrange,
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Chuyển sang trang chính sách
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => PolicyScreen()),
+                              );
+                            },
+                            child: RichText(
+                              text: const TextSpan(
+                                style: TextStyle(color: Colors.black, fontSize: 15),
+                                children: [
+                                  TextSpan(text: 'Tôi đã đọc và đồng ý với '),
+                                  TextSpan(
+                                    text: 'Điều khoản & Chính sách',
+                                    style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (showPolicyError)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8, top: 2),
+                        child: Text(
+                          'Bạn cần đồng ý với điều khoản và chính sách!',
+                          style: TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ),
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,

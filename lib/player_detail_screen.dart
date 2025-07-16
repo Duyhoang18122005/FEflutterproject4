@@ -643,7 +643,126 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                   _StatItem(label: 'Người\nTheo dõi', value: isLoadingStats ? '...' : followerCount.toString()),
                   _StatItem(label: 'Giờ\nĐược thuê', value: isLoadingHireHours ? '...' : (totalHireHours?.toString() ?? '0')),
                   const _StatItem(label: '%\nHoàn thành', value: '94.34'),
-                  const _StatItem(label: 'Thiết bị', value: '', icon: Icons.block),
+                  // Icon báo cáo
+                  Builder(
+                    builder: (context) {
+                      return GestureDetector(
+                        onTap: () async {
+                          String? reason;
+                          String? description;
+                          final reasonController = TextEditingController();
+                          final descriptionController = TextEditingController();
+                          await showDialog(
+                            context: context,
+                            builder: (context) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                elevation: 8,
+                                backgroundColor: Colors.white,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: const Icon(Icons.report, color: Colors.red, size: 40),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'Báo cáo người chơi',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.deepOrange),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 18),
+                                      TextField(
+                                        controller: reasonController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Lý do',
+                                          hintText: 'Nhập lý do báo cáo',
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                        ),
+                                        onChanged: (value) => reason = value,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      TextField(
+                                        controller: descriptionController,
+                                        minLines: 2,
+                                        maxLines: 4,
+                                        decoration: InputDecoration(
+                                          labelText: 'Mô tả',
+                                          hintText: 'Mô tả chi tiết vấn đề',
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                        ),
+                                        onChanged: (value) => description = value,
+                                      ),
+                                      const SizedBox(height: 22),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              style: OutlinedButton.styleFrom(
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                                side: const BorderSide(color: Colors.deepOrange),
+                                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                              ),
+                                              child: const Text('Hủy', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold)),
+                                              onPressed: () => Navigator.pop(context),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.deepOrange,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                              ),
+                                              child: const Text('Gửi báo cáo', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                              onPressed: () {
+                                                if ((reasonController.text).isNotEmpty && (descriptionController.text).isNotEmpty) {
+                                                  reason = reasonController.text;
+                                                  description = descriptionController.text;
+                                                  Navigator.pop(context);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                          if ((reason ?? '').isNotEmpty && (description ?? '').isNotEmpty) {
+                            final success = await ApiService.reportPlayer(
+                              reportedPlayerId: widget.player['id'] is int ? widget.player['id'] : int.parse(widget.player['id'].toString()),
+                              reason: reason!,
+                              description: description!,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(success ? 'Báo cáo thành công!' : 'Báo cáo thất bại!')),
+                            );
+                          }
+                        },
+                        child: Column(
+                          children: const [
+                            Icon(Icons.report, color: Colors.red, size: 28),
+                            SizedBox(height: 4),
+                            Text('Báo cáo', style: TextStyle(fontSize: 12, color: Colors.black54), textAlign: TextAlign.center),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

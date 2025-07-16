@@ -1184,4 +1184,31 @@ class ApiService {
     }
     return [];
   }
+
+  // Báo cáo player
+  static Future<bool> reportPlayer({
+    required int reportedPlayerId,
+    required String reason,
+    required String description,
+  }) async {
+    if (!await checkConnection()) {
+      return false;
+    }
+    try {
+      final headers = await _headersWithToken;
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/reports'),
+        headers: headers,
+        body: jsonEncode({
+          'reportedPlayerId': reportedPlayerId,
+          'reason': reason,
+          'description': description,
+        }),
+      ).timeout(timeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      logger.e('Report player error: $e');
+      return false;
+    }
+  }
 }

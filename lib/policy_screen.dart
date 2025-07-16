@@ -119,7 +119,7 @@ class _PolicyScreenState extends State<PolicyScreen> {
                       title: 'Giới Thiệu',
                       children: [
                         const Text(
-                          'Chào mừng bạn đến với GameHire - nền tảng kết nối người chơi game chuyên nghiệp và người dùng. '
+                          'Chào mừng bạn đến với PlayerDou - nền tảng kết nối người chơi game chuyên nghiệp và người dùng. '
                           'Chúng tôi cung cấp dịch vụ thuê người chơi game với mục tiêu mang đến trải nghiệm giải trí tuyệt vời và an toàn cho tất cả người dùng.',
                         ),
                         const SizedBox(height: 8),
