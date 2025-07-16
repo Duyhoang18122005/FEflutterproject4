@@ -7,6 +7,7 @@ import 'dart:async';
 import 'hired_players_screen.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'config/api_config.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -870,7 +871,7 @@ class _VipPlayerCard extends StatelessWidget {
   Future<Uint8List?> fetchAvatarBytes(String userId) async {
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        '${ApiConfig.baseUrl}/api/auth/avatar/$userId',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {
@@ -885,7 +886,7 @@ class _VipPlayerCard extends StatelessWidget {
   Future<Uint8List?> fetchCoverImageBytes(String userId) async {
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        '${ApiConfig.baseUrl}/api/users/$userId/cover-image-bytes',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {
@@ -959,56 +960,42 @@ class _VipPlayerCard extends StatelessWidget {
                     topRight: Radius.circular(24),
                   ),
                 ),
-                child: Icon(Icons.image, size: 48, color: Colors.grey[400]),
+                child: const Center(child: Icon(Icons.image, size: 48, color: Colors.grey)),
               );
             },
           ),
-          // Avatar chồng lên cover image
+          // Avatar (giữ nguyên)
           Positioned(
             left: 0,
             right: 0,
             top: 70,
             child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: FutureBuilder<Uint8List?>(
-                  future: fetchAvatarBytes(userId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircleAvatar(
-                        radius: 36,
-                        backgroundColor: Colors.white,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange),
-                      );
-                    }
-                    if (snapshot.hasData && snapshot.data != null) {
-                      return CircleAvatar(
-                        radius: 36,
-                        backgroundImage: MemoryImage(snapshot.data!),
-                        backgroundColor: Colors.transparent,
-                      );
-                    }
-                    return CircleAvatar(
+              child: FutureBuilder<Uint8List?>(
+                future: fetchAvatarBytes(userId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircleAvatar(
                       radius: 36,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 36, color: isGray ? Colors.grey : Colors.deepOrange),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.deepOrange),
                     );
-                  },
-                ),
+                  }
+                  ImageProvider<Object> avatarProvider;
+                  if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                    avatarProvider = MemoryImage(snapshot.data!);
+                  } else {
+                    avatarProvider = const AssetImage('assets/default_avatar.png') as ImageProvider<Object>;
+                  }
+                  return CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.deepOrange.withOpacity(0.08),
+                    backgroundImage: avatarProvider,
+                  );
+                },
               ),
             ),
           ),
-          // Nội dung card
+          // Nội dung card (giữ nguyên)
           Positioned.fill(
             top: 130,
             child: Padding(

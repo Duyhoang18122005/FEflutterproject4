@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'player_profile_screen.dart';
+import 'config/api_config.dart';
 
 class MomentDetailScreen extends StatelessWidget {
   final Map<String, dynamic> moment;
@@ -8,7 +9,7 @@ class MomentDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = (moment['imageUrls'] as List).isNotEmpty
-        ? 'http://10.0.2.2:8080/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
+        ? '${ApiConfig.baseUrl}/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
         : null;
     final userId = moment['playerUserId']?.toString();
     return Scaffold(
@@ -62,7 +63,7 @@ class MomentDetailScreen extends StatelessWidget {
                     radius: 24,
                     backgroundColor: Colors.deepOrange.withOpacity(0.1),
                     backgroundImage: userId != null
-                        ? NetworkImage('http://10.0.2.2:8080/api/auth/avatar/$userId')
+                        ? NetworkImage('${ApiConfig.baseUrl}/api/auth/avatar/$userId')
                         : null,
                     onBackgroundImageError: (_, __) {},
                     child: userId == null

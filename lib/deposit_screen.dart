@@ -245,7 +245,7 @@ class _DepositScreenState extends State<DepositScreen> {
                         }
                         final result = await ApiService.createVnPayPayment(
                           amount: amount,
-                          orderInfo: 'Nạp xu qua VNPAY',
+                          orderInfo: 'Nap xu qua VNPAY',
                           userId: user['id'],
                         );
                         if (result != null && result['paymentUrl'] != null) {

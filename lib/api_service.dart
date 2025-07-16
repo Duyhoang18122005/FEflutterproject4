@@ -838,7 +838,7 @@ class ApiService {
   }
 
   static Future<bool> forgotPassword(String email) async {
-    final url = Uri.parse('http://10.0.2.2:8080/api/auth/forgot-password');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/forgot-password');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -912,7 +912,7 @@ class ApiService {
   static Future<List<dynamic>?> getAllUserOrders(int userId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/orders/user-all/$userId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/orders/user-all/$userId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -931,7 +931,7 @@ class ApiService {
   }) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/$orderId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -947,7 +947,7 @@ class ApiService {
   static Future<List<dynamic>?> getUserGivenReviews() async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/user/given-reviews'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/user/given-reviews'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -963,7 +963,7 @@ class ApiService {
   static Future<bool> deleteOrderReview(String orderId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.delete(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/$orderId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -975,7 +975,7 @@ class ApiService {
   static Future<List<dynamic>?> getPlayerReviews(String playerId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/player/$playerId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/player/$playerId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -991,7 +991,7 @@ class ApiService {
   static Future<Map<String, dynamic>?> getPlayerRatingSummary(String playerId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/rating-summary/player/$playerId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/rating-summary/player/$playerId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1007,7 +1007,7 @@ class ApiService {
   static Future<List<String>> getPlayerImages(String playerId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/game-players/$playerId/images'),
+      Uri.parse('${ApiConfig.baseUrl}/api/game-players/$playerId/images'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1026,7 +1026,7 @@ class ApiService {
   static Future<Map<String, dynamic>?> getOrderReview(String orderId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/order-reviews/$orderId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/order-reviews/$orderId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1041,7 +1041,7 @@ class ApiService {
   static Future<Map<String, dynamic>?> fetchPlayerRewardStatus(String playerId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/player-rewards/status/$playerId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/player-rewards/status/$playerId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1056,7 +1056,7 @@ class ApiService {
   static Future<List<dynamic>?> fetchPlayerRewardHistory(String playerId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/player-rewards/history/$playerId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/player-rewards/history/$playerId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1072,7 +1072,7 @@ class ApiService {
     final token = await storage.read(key: 'jwt');
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://10.0.2.2:8080/api/auth/update/cover-image'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/update/cover-image'),
     );
     request.headers['Authorization'] = 'Bearer $token';
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -1088,7 +1088,7 @@ class ApiService {
   static Future<String?> fetchCoverImageUrl(String userId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/auth/me'),
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/me'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1104,7 +1104,7 @@ class ApiService {
   static Future<String?> fetchUserCoverImageUrl(String userId) async {
     final token = await storage.read(key: 'jwt');
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/users/$userId/cover-image'),
+      Uri.parse('${ApiConfig.baseUrl}/api/users/$userId/cover-image'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1121,7 +1121,7 @@ class ApiService {
     final token = await storage.read(key: 'jwt');
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://10.0.2.2:8080/api/game-players/$playerId/images'),
+      Uri.parse('${ApiConfig.baseUrl}/api/game-players/$playerId/images'),
     );
     request.headers['Authorization'] = 'Bearer $token';
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -1137,7 +1137,7 @@ class ApiService {
     File? imageFile,
   }) async {
     final token = await storage.read(key: 'jwt');
-    final url = Uri.parse('http://10.0.2.2:8080/api/moments/$gamePlayerId/upload');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/moments/$gamePlayerId/upload');
     var request = http.MultipartRequest('POST', url);
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['content'] = content;
@@ -1153,7 +1153,7 @@ class ApiService {
 
   static Future<List<dynamic>> fetchPlayerMoments(String playerId) async {
     final token = await storage.read(key: 'jwt');
-    final url = Uri.parse('http://10.0.2.2:8080/api/moments/player/$playerId');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/moments/player/$playerId');
     final response = await http.get(
       url,
       headers: {
@@ -1170,7 +1170,7 @@ class ApiService {
 
   static Future<List<dynamic>> fetchAllMoments({int page = 0, int size = 20}) async {
     final token = await storage.read(key: 'jwt');
-    final url = Uri.parse('http://10.0.2.2:8080/api/moments/all?page=$page&size=$size');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/moments/all?page=$page&size=$size');
     final response = await http.get(
       url,
       headers: {
@@ -1223,6 +1223,25 @@ class ApiService {
     } catch (e) {
       logger.e('Report player error: $e');
       return 'Báo cáo thất bại!';
+    }
+  }
+
+  static Future<String?> withdraw(int coin) async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/payments/withdraw');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'coin': coin}),
+    );
+    if (response.statusCode == 200) {
+      return null; // Thành công
+    } else {
+      final error = jsonDecode(response.body);
+      return error['message'] ?? 'Rút tiền thất bại';
     }
   }
 }

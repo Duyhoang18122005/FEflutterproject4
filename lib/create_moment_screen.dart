@@ -68,45 +68,63 @@ class _CreateMomentScreenState extends State<CreateMomentScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _contentController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Nội dung',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image),
-                  label: const Text('Chọn ảnh (tùy chọn)'),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _contentController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Nội dung',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(width: 12),
-                if (_selectedImage != null)
-                  Text(_selectedImage!.path.split('/').last),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.image),
+                    label: const Text('Chọn ảnh (tùy chọn)'),
+                  ),
+                  const SizedBox(width: 12),
+                  if (_selectedImage != null)
+                    Expanded(
+                      child: Text(
+                        _selectedImage!.path.split('/').last,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+              if (_selectedImage != null) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: Image.file(
+                    _selectedImage!,
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _submitMoment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitMoment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Đăng', style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Đăng', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

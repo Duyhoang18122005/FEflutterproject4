@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/notification_helper.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'config/api_config.dart';
 
 class HirePlayerScreen extends StatefulWidget {
   final Map<String, dynamic> player;
@@ -60,7 +61,7 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
     if (userId == null) return;
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        '${ApiConfig.baseUrl}/api/auth/avatar/$userId',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {
@@ -76,7 +77,7 @@ class _HirePlayerScreenState extends State<HirePlayerScreen> {
     if (userId == null) return;
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        '${ApiConfig.baseUrl}/api/users/$userId/cover-image-bytes',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {

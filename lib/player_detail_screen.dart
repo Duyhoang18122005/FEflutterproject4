@@ -6,6 +6,7 @@ import 'api_service.dart';
 import 'utils/notification_helper.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'config/api_config.dart';
 
 String fixImageUrl(String url) {
   if (url.startsWith('http')) return url;
@@ -178,7 +179,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     if (userId == null) return;
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        '${ApiConfig.baseUrl}/api/auth/avatar/$userId',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {
@@ -196,7 +197,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     try {
       final token = await ApiService.storage.read(key: 'jwt');
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/players/$playerId/hire-hours',
+        '${ApiConfig.baseUrl}/api/players/$playerId/hire-hours',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -221,7 +222,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     if (userId == null) return;
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+        '${ApiConfig.baseUrl}/api/users/$userId/cover-image-bytes',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {
@@ -988,7 +989,7 @@ class _PlayerMomentsTabState extends State<_PlayerMomentsTab> {
       itemBuilder: (context, index) {
         final moment = moments[index];
         final imageUrl = (moment['imageUrls'] as List).isNotEmpty
-            ? 'http://10.0.2.2:8080/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
+            ? '${ApiConfig.baseUrl}/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
             : null;
         return Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),

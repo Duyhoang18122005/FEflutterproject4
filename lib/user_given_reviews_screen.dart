@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'config/api_config.dart';
 
 class UserGivenReviewsScreen extends StatefulWidget {
   const UserGivenReviewsScreen({Key? key}) : super(key: key);
@@ -38,7 +39,7 @@ class _UserGivenReviewsScreenState extends State<UserGivenReviewsScreen> {
   String fixImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http')) return path;
-    return 'http://10.0.2.2:8080/$path';
+    return '${ApiConfig.baseUrl}/$path';
   }
 
   @override

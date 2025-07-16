@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'api_service.dart';
 import 'hire_confirmation_screen.dart';
+import 'config/api_config.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -344,7 +345,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           if (isCurrentPlayer) {
                             avatarUrl = order['hirerAvatar'];
                             if (avatarUrl == null && order['hirerId'] != null) {
-                              avatarUrl = 'http://10.0.2.2:8080/api/auth/avatar/${order['hirerId']}';
+                              avatarUrl = '${ApiConfig.baseUrl}/api/auth/avatar/${order['hirerId']}';
                             }
                           } else {
                             avatarUrl = order['playerAvatarUrl'];

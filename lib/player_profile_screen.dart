@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'package:intl/intl.dart';
+import 'config/api_config.dart';
 
 class PlayerProfileScreen extends StatefulWidget {
   final String playerUserId;
@@ -62,7 +63,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final avatarUrl = 'http://10.0.2.2:8080/api/auth/avatar/${widget.playerUserId}';
+    final avatarUrl = '${ApiConfig.baseUrl}/api/auth/avatar/${widget.playerUserId}';
     final name = playerInfo?['username'] ?? playerInfo?['fullName'] ?? userInfo?['fullName'] ?? userInfo?['username'] ?? '';
     final phone = playerInfo?['phoneNumber'] ?? userInfo?['phoneNumber'] ?? '';
     final game = playerInfo?['gameName'] ?? playerInfo?['game']?['name'] ?? '';
@@ -185,7 +186,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       ...moments.map((moment) {
                         final imageUrls = moment['imageUrls'] as List?;
                         final imageUrl = (imageUrls != null && imageUrls.isNotEmpty)
-                            ? 'http://10.0.2.2:8080/api/moments/moment-images/' + (imageUrls[0] as String).split('/').last
+                            ? '${ApiConfig.baseUrl}/api/moments/moment-images/' + (imageUrls[0] as String).split('/').last
                             : null;
                         return Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),

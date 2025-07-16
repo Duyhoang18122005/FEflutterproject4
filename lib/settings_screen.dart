@@ -19,6 +19,9 @@ import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'create_moment_screen.dart';
+import 'config/api_config.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isCheckingPlayer = false;
   String? playerId;
   File? _selectedImage;
+  File? _selectedCoverImage;
   final ImagePicker _picker = ImagePicker();
   Uint8List? avatarBytes;
   Uint8List? coverImageBytes;
@@ -48,7 +52,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadUserInfo();
     _loadWalletBalance();
     _checkIsPlayer();
+    // Luôn load lại cover image từ server khi vào trang
     _loadCoverImage();
+    _selectedCoverImage = null;
   }
 
   @override
@@ -73,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (id.isNotEmpty) {
       try {
         final response = await Dio().get(
-          'http://10.0.2.2:8080/api/auth/avatar/$id',
+          '${ApiConfig.baseUrl}/api/auth/avatar/$id',
           options: Options(responseType: ResponseType.bytes),
         );
         if (response.statusCode == 200) {
@@ -121,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<Uint8List?> fetchCoverImageBytes(String userId) async {
     final token = await ApiService.storage.read(key: 'jwt');
     final response = await Dio().get(
-      'http://10.0.2.2:8080/api/users/$userId/cover-image-bytes',
+      '${ApiConfig.baseUrl}/users/$userId/cover-image-bytes',
       options: Options(
         responseType: ResponseType.bytes,
         headers: {'Authorization': 'Bearer $token'},
@@ -146,15 +152,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _pickAndUploadCover() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
-    final file = pickedFile.path;
-    final url = await ApiService.uploadCoverImage(file);
+    setState(() {
+      _selectedCoverImage = File(pickedFile.path);
+    });
+    final url = await ApiService.uploadCoverImage(pickedFile.path);
     if (url != null && mounted) {
-      setState(() {
-        // coverImageUrl = url; // Xóa mọi dòng có coverImageUrl, chỉ giữ lại coverImageBytes cho ảnh bìa
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cập nhật ảnh bìa thành công!')),
       );
+      // Reload lại ảnh bìa từ server nếu muốn đồng bộ
+      await _loadCoverImage();
+      setState(() {
+        _selectedCoverImage = null; // Xóa file tạm sau khi đã đồng bộ
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lỗi khi cập nhật ảnh bìa!')),
@@ -206,19 +216,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<File> resizeImage(File file, {int maxWidth = 512, int maxHeight = 512}) async {
+    final bytes = await file.readAsBytes();
+    final image = img.decodeImage(bytes);
+    if (image == null) return file;
+    final resized = img.copyResize(image, width: maxWidth, height: maxHeight);
+    final resizedBytes = img.encodeJpg(resized, quality: 85);
+    final tempDir = await getTemporaryDirectory();
+    final resizedFile = File('${tempDir.path}/resized_avatar.jpg');
+    await resizedFile.writeAsBytes(resizedBytes);
+    return resizedFile;
+  }
+
   Future<void> _pickAndUploadAvatar() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
-    final file = pickedFile.path;
+    File file = File(pickedFile.path);
+    file = await resizeImage(file, maxWidth: 512, maxHeight: 512);
     final token = await ApiService.storage.read(key: 'jwt');
     final dio = Dio();
     dio.options.headers['Authorization'] = 'Bearer $token';
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(file, filename: file.split('/').last),
+      'file': await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
     });
     try {
       final response = await dio.post(
-        'http://10.0.2.2:8080/api/auth/update/avatar',
+        '${ApiConfig.baseUrl}/api/auth/update/avatar',
         data: formData,
       );
       if (response.statusCode == 200) {
@@ -228,12 +251,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await _loadUserInfo(); // Reload lại avatar sau khi upload thành công
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi:  ̷ ${response.statusMessage}')),
+          SnackBar(content: Text('Lỗi:  ̷  [${response.statusMessage}]')),
         );
       }
     } on DioError catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi upload avatar:  ${e.response?.data ?? e.toString()}')),
+        SnackBar(content: Text('Lỗi upload avatar:   [${e.response?.data ?? e.toString()}]')),
       );
     }
   }
@@ -280,6 +303,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return 'http://10.0.2.2:8080/$path';
   }
 
+  void _showWithdrawDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Rút tiền'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: 'Nhập số xu muốn rút'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final coin = int.tryParse(controller.text) ?? 0;
+              if (coin < 1) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Số xu phải lớn hơn 0')),
+                );
+                return;
+              }
+              Navigator.pop(context); // Đóng dialog
+              final error = await ApiService.withdraw(coin);
+              if (error == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Rút tiền thành công!')),
+                );
+                _loadWalletBalance();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error)),
+                );
+              }
+            },
+            child: Text('Rút'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Kiểm tra trạng thái player mỗi lần build nếu cần
@@ -320,18 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     child: coverImageBytes != null
-                        ? ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(24),
-                              bottomRight: Radius.circular(24),
-                            ),
-                            child: Image.memory(
-                              coverImageBytes!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: 160,
-                            ),
-                          )
+                        ? Image.memory(coverImageBytes!, fit: BoxFit.cover, width: double.infinity, height: 160)
                         : Center(child: Icon(Icons.image, size: 64, color: Colors.grey[400])),
                   ),
                   // Nút đổi ảnh bìa
@@ -591,6 +648,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ],
                         ),
                       ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _showWithdrawDialog(context),
+                      child: _SettingRow(
+                        icon: Icons.money_outlined,
+                        label: 'Rút tiền',
+                        color: Colors.green,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                   ],
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'config/api_config.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> player; // Thông tin người chơi
@@ -53,7 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final userId = widget.player['user']['id'];
     try {
       final response = await Dio().get(
-        'http://10.0.2.2:8080/api/auth/avatar/$userId',
+        '${ApiConfig.baseUrl}/api/auth/avatar/$userId',
         options: Options(responseType: ResponseType.bytes),
       );
       if (response.statusCode == 200) {

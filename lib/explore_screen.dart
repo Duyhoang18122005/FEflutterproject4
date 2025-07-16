@@ -3,6 +3,7 @@ import 'api_service.dart';
 import 'moment_detail_screen.dart';
 import 'player_profile_screen.dart';
 import 'package:intl/intl.dart';
+import 'config/api_config.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -259,7 +260,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               itemBuilder: (context, index) {
                                 final moment = filteredMoments[index];
                                 final imageUrl = (moment['imageUrls'] as List).isNotEmpty
-                                    ? 'http://10.0.2.2:8080/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
+                                    ? '${ApiConfig.baseUrl}/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
                                     : null;
                                 final userId = moment['playerUserId']?.toString();
                                 return GestureDetector(
@@ -319,7 +320,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                                   radius: 18,
                                                   backgroundColor: Colors.deepOrange.withOpacity(0.1),
                                                   backgroundImage: userId != null
-                                                      ? NetworkImage('http://10.0.2.2:8080/api/auth/avatar/$userId')
+                                                      ? NetworkImage('${ApiConfig.baseUrl}/api/auth/avatar/$userId')
                                                       : null,
                                                   onBackgroundImageError: (_, __) {},
                                                   child: userId == null
