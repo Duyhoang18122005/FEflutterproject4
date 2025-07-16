@@ -436,15 +436,15 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                       ? GestureDetector(
                           onTap: () => _showImageDialog(coverImageBytes!),
                           child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(32),
-                              bottomRight: Radius.circular(32),
-                            ),
-                            child: Image.memory(
-                              coverImageBytes!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: 140,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
+                          ),
+                          child: Image.memory(
+                            coverImageBytes!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 140,
                             ),
                           ),
                         )
@@ -460,16 +460,16 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                       onTap: () {
                         if (avatarBytes != null) _showImageDialog(avatarBytes!);
                       },
+                    child: CircleAvatar(
+                      radius: 56,
+                      backgroundColor: const Color(0xFFFFF3E0),
                       child: CircleAvatar(
-                        radius: 56,
-                        backgroundColor: const Color(0xFFFFF3E0),
-                        child: CircleAvatar(
-                          radius: 52,
-                          backgroundColor: const Color(0xFFFFE0B2),
-                          backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
-                          child: avatarBytes == null
-                              ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
-                              : null,
+                        radius: 52,
+                        backgroundColor: const Color(0xFFFFE0B2),
+                        backgroundImage: avatarBytes != null ? MemoryImage(avatarBytes!) : null,
+                        child: avatarBytes == null
+                            ? const Icon(Icons.person, size: 52, color: Color(0xFFFFA726))
+                            : null,
                         ),
                       ),
                     ),
@@ -877,8 +877,8 @@ class _PlayerReviewsTabState extends State<_PlayerReviewsTab> {
                       backgroundImage: (review['playerAvatar'] != null && review['playerAvatar'].toString().isNotEmpty)
                           ? NetworkImage(fixImageUrl(review['playerAvatar']))
                           : (review['reviewerAvatar'] != null && review['reviewerAvatar'].toString().isNotEmpty)
-                              ? NetworkImage(fixImageUrl(review['reviewerAvatar']))
-                              : null,
+                          ? NetworkImage(fixImageUrl(review['reviewerAvatar']))
+                          : null,
                       backgroundColor: Colors.deepOrange.shade50,
                       child: ((review['playerAvatar'] == null || review['playerAvatar'].toString().isEmpty) && (review['reviewerAvatar'] == null || review['reviewerAvatar'].toString().isEmpty))
                           ? const Icon(Icons.person, color: Colors.deepOrange)

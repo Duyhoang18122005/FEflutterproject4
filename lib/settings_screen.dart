@@ -452,22 +452,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 8),
                     if (isPlayer)
-                      GestureDetector(
-                        onTap: () {
-                          if (playerId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PlayerRewardScreen(playerId: playerId!),
-                              ),
-                            );
-                          }
-                        },
-                        child: _SettingRow(
-                          icon: Icons.card_giftcard,
-                          label: 'Thưởng',
-                          color: Colors.pinkAccent,
-                        ),
+                    GestureDetector(
+                      onTap: () {
+                        if (playerId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlayerRewardScreen(playerId: playerId!),
+                            ),
+                          );
+                        }
+                      },
+                      child: _SettingRow(
+                        icon: Icons.card_giftcard,
+                        label: 'Thưởng',
+                        color: Colors.pinkAccent,
+                      ),
                       ),
                     const SizedBox(height: 8),
                     GestureDetector(
