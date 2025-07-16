@@ -646,6 +646,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                   // Icon báo cáo
                   Builder(
                     builder: (context) {
+                      TextEditingController videoController = TextEditingController();
                       return GestureDetector(
                         onTap: () async {
                           String? reason;
@@ -702,6 +703,16 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                                         ),
                                         onChanged: (value) => description = value,
                                       ),
+                                      const SizedBox(height: 14),
+                                      TextField(
+                                        controller: videoController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Link video bằng chứng (nếu có)',
+                                          hintText: 'Dán link video (YouTube, Google Drive, v.v.)',
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                        ),
+                                      ),
                                       const SizedBox(height: 22),
                                       Row(
                                         children: [
@@ -743,13 +754,14 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                             },
                           );
                           if ((reason ?? '').isNotEmpty && (description ?? '').isNotEmpty) {
-                            final success = await ApiService.reportPlayer(
+                            final error = await ApiService.reportPlayer(
                               reportedPlayerId: widget.player['id'] is int ? widget.player['id'] : int.parse(widget.player['id'].toString()),
                               reason: reason!,
                               description: description!,
+                              video: videoController.text.trim(),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(success ? 'Báo cáo thành công!' : 'Báo cáo thất bại!')),
+                              SnackBar(content: Text(error == null ? 'Báo cáo thành công!' : error)),
                             );
                           }
                         },

@@ -1186,29 +1186,43 @@ class ApiService {
   }
 
   // Báo cáo player
-  static Future<bool> reportPlayer({
+  static Future<String?> reportPlayer({
     required int reportedPlayerId,
     required String reason,
     required String description,
+    String? video,
   }) async {
     if (!await checkConnection()) {
-      return false;
+      return 'Không có kết nối mạng';
     }
     try {
       final headers = await _headersWithToken;
+      final body = {
+        'reportedPlayerId': reportedPlayerId,
+        'reason': reason,
+        'description': description,
+      };
+      if (video != null && video.isNotEmpty) {
+        body['video'] = video;
+      }
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/api/reports'),
         headers: headers,
-        body: jsonEncode({
-          'reportedPlayerId': reportedPlayerId,
-          'reason': reason,
-          'description': description,
-        }),
+        body: jsonEncode(body),
       ).timeout(timeout);
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return null; // Thành công
+      } else {
+        try {
+          final respBody = jsonDecode(response.body);
+          return respBody['message'] ?? 'Báo cáo thất bại!';
+        } catch (_) {
+          return 'Báo cáo thất bại!';
+        }
+      }
     } catch (e) {
       logger.e('Report player error: $e');
-      return false;
+      return 'Báo cáo thất bại!';
     }
   }
 }
