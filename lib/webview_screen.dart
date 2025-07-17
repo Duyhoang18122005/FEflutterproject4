@@ -6,7 +6,12 @@ import 'package:flutter/gestures.dart';
 class WebViewScreen extends StatefulWidget {
   final String url;
   final String? title;
-  const WebViewScreen({super.key, required this.url, this.title});
+
+  const WebViewScreen({
+    super.key,
+    required this.url,
+    this.title,
+  });
 
   @override
   State<WebViewScreen> createState() => _WebViewScreenState();
@@ -22,20 +27,26 @@ class _WebViewScreenState extends State<WebViewScreen> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFF5F5F5))
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) {
+          onPageStarted: (url) {
             setState(() => _isLoading = true);
+            debugPrint('WebView onPageStarted: $url');
           },
-          onPageFinished: (_) {
+          onPageFinished: (url) {
             setState(() => _isLoading = false);
+            debugPrint('WebView onPageFinished: $url');
           },
           onWebResourceError: (error) {
             setState(() {
               _isLoading = false;
-              _errorMessage = 'Lỗi khi tải trang: \n${error.description}';
+              _errorMessage = 'Lỗi khi tải trang: ${error.description}';
             });
+            debugPrint('WebView onWebResourceError: ${error.errorType} - ${error.description}');
+          },
+          onNavigationRequest: (request) {
+            debugPrint('WebView navigation request: ${request.url}');
+            return NavigationDecision.navigate;
           },
         ),
       )
@@ -48,6 +59,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       appBar: AppBar(
         title: Text(widget.title ?? 'Thanh toán'),
         backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 1,
       ),
       body: Stack(
@@ -61,7 +73,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   children: [
                     const Icon(Icons.error, color: Colors.red, size: 48),
                     const SizedBox(height: 16),
-                    Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 18), textAlign: TextAlign.center),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 18),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
@@ -80,18 +96,21 @@ class _WebViewScreenState extends State<WebViewScreen> {
           else
             WebViewWidget(
               controller: _controller,
-              gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{}, // Tắt gesture
+              gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
             ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withOpacity(0.1),
               child: const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Đang tải trang thanh toán...', style: TextStyle(color: Colors.black54)),
+                    Text(
+                      'Đang tải trang thanh toán...',
+                      style: TextStyle(color: Colors.black54),
+                    ),
                   ],
                 ),
               ),
