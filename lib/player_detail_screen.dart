@@ -82,7 +82,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   int? totalHireHours;
   bool isLoadingHireHours = true;
   Uint8List? coverImageBytes;
-  
+
   // Thêm biến cho completionRate
   double? completionRate;
   bool isLoadingCompletionRate = true;
