@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
 class DonatePlayerScreen extends StatefulWidget {
   final Map<String, dynamic> player;
@@ -11,6 +12,31 @@ class DonatePlayerScreen extends StatefulWidget {
 class _DonatePlayerScreenState extends State<DonatePlayerScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController messageController = TextEditingController();
+  int? coinBalance;
+  bool isLoadingBalance = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadCoinBalance();
+  }
+
+  Future<void> loadCoinBalance() async {
+    try {
+      print('Đang gọi getCurrentUser...');
+      final userInfo = await ApiService.getCurrentUser();
+      print('Kết quả getCurrentUser: $userInfo');
+      setState(() {
+        coinBalance = userInfo?['coin'] ?? 0;
+        isLoadingBalance = false;
+      });
+    } catch (e) {
+      print('Lỗi getCurrentUser: $e');
+      setState(() {
+        isLoadingBalance = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -93,7 +119,12 @@ class _DonatePlayerScreenState extends State<DonatePlayerScreen> {
             const SizedBox(height: 32),
             const Text('Số dư xu', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('0 xu', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18)),
+            isLoadingBalance
+                ? const CircularProgressIndicator()
+                : Text(
+                    '${coinBalance?.toString() ?? '0'} xu',
+                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
             const SizedBox(height: 24),
             const Text('Số xu donate:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 8),
@@ -140,7 +171,30 @@ class _DonatePlayerScreenState extends State<DonatePlayerScreen> {
                     borderRadius: BorderRadius.circular(32),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () async {
+                  final coin = int.tryParse(amountController.text) ?? 0;
+                  if (coin < 1) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Số xu donate phải lớn hơn 0')),
+                    );
+                    return;
+                  }
+                  final error = await ApiService.donatePlayer(
+                    playerId: widget.player['id'] is int ? widget.player['id'] : int.tryParse(widget.player['id'].toString()) ?? 0,
+                    coin: coin,
+                    message: messageController.text.trim(),
+                  );
+                  if (error == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Donate thành công!')),
+                    );
+                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(error)),
+                    );
+                  }
+                },
                 child: const Text('Donate', style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),

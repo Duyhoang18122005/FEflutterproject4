@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'api_service.dart';
 import 'webview_screen.dart';
-import 'deposit_history_screen.dart';
+import 'balance_history_screen.dart';
 import 'utils/notification_helper.dart';
 
 class DepositScreen extends StatefulWidget {
@@ -71,7 +71,7 @@ class _DepositScreenState extends State<DepositScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => DepositHistoryScreen()),
+                MaterialPageRoute(builder: (_) => BalanceHistoryScreen()),
               );
             },
           ),

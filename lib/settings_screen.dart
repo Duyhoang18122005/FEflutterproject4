@@ -22,6 +22,7 @@ import 'create_moment_screen.dart';
 import 'config/api_config.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import 'balance_history_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -465,7 +466,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : (coinBalance != null ? '${coinBalance!.toStringAsFixed(0)} xu' : 'Lỗi'),
                     ),
                     const SizedBox(height: 8),
-                    _InfoRow(icon: Icons.balance, label: "Biến động số dư"),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BalanceHistoryScreen()),
+                        );
+                      },
+                      child: _InfoRow(icon: Icons.balance, label: "Biến động số dư"),
+                    ),
                     const SizedBox(height: 8),
                     isLoading 
                       ? const Center(child: CircularProgressIndicator())

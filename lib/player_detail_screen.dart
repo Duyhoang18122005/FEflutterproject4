@@ -82,6 +82,10 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   int? totalHireHours;
   bool isLoadingHireHours = true;
   Uint8List? coverImageBytes;
+  
+  // Thêm biến cho completionRate
+  double? completionRate;
+  bool isLoadingCompletionRate = true;
 
   @override
   void initState() {
@@ -93,6 +97,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     _loadPlayerImages();
     _loadAvatar();
     _loadHireHours();
+    _loadCompletionRate();
   }
 
   Future<void> _loadStats() async {
@@ -214,6 +219,24 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       }
     } catch (_) {
       setState(() { isLoadingHireHours = false; });
+    }
+  }
+
+  Future<void> _loadCompletionRate() async {
+    final id = widget.player['id'] is int ? widget.player['id'] : int.tryParse(widget.player['id'].toString() ?? '');
+    if (id != null) {
+      final stats = await ApiService.fetchPlayerStats(id);
+      setState(() {
+        completionRate = stats != null && stats['completionRate'] != null
+            ? (stats['completionRate'] is int ? (stats['completionRate'] as int).toDouble() : stats['completionRate'] as double)
+            : 0.0;
+        isLoadingCompletionRate = false;
+      });
+    } else {
+      setState(() {
+        completionRate = 0.0;
+        isLoadingCompletionRate = false;
+      });
     }
   }
 
@@ -643,7 +666,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 children: [
                   _StatItem(label: 'Người\nTheo dõi', value: isLoadingStats ? '...' : followerCount.toString()),
                   _StatItem(label: 'Giờ\nĐược thuê', value: isLoadingHireHours ? '...' : (totalHireHours?.toString() ?? '0')),
-                  const _StatItem(label: '%\nHoàn thành', value: '94.34'),
+                  _StatItem(label: '%\nHoàn thành', value: isLoadingCompletionRate ? '...' : (completionRate?.toStringAsFixed(2) ?? '0.00')),
                   // Icon báo cáo
                   Builder(
                     builder: (context) {

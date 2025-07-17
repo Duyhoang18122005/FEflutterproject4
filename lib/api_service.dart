@@ -1244,4 +1244,102 @@ class ApiService {
       return error['message'] ?? 'Rút tiền thất bại';
     }
   }
+
+  static Future<List<dynamic>> fetchBalanceHistory() async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/payments/balance-history');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200 && response.body.isNotEmpty) {
+      return List<dynamic>.from(jsonDecode(response.body));
+    }
+    return [];
+  }
+
+  static Future<String?> donatePlayer({
+    required int playerId,
+    required int coin,
+    String? message,
+  }) async {
+    final token = await storage.read(key: 'jwt');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/payments/donate');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'playerId': playerId,
+        'coin': coin,
+        if (message != null && message.isNotEmpty) 'message': message,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return null; // Thành công
+    } else {
+      try {
+        final error = jsonDecode(response.body);
+        return error['message'] ?? 'Donate thất bại';
+      } catch (_) {
+        return 'Donate thất bại';
+      }
+    }
+  }
+
+  // Get coin balance
+  static Future<int?> getCoinBalance() async {
+    if (!await checkConnection()) {
+      return null;
+    }
+
+    try {
+      final headers = await _headersWithToken;
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/users/me'),
+        headers: headers,
+      ).timeout(timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['coin'] ?? 0;
+      } else if (response.statusCode == 401) {
+        // Token expired, try to refresh
+        final newToken = await refreshToken();
+        if (newToken != null) {
+          return getCoinBalance(); // Retry with new token
+        }
+      }
+      return null;
+    } catch (e) {
+      logger.e('Get coin balance error: $e');
+      return null;
+    }
+  }
+
+  // Lấy thống kê player (bao gồm completionRate)
+  static Future<Map<String, dynamic>?> fetchPlayerStats(int playerId) async {
+    try {
+      final token = await storage.read(key: 'jwt');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/players/$playerId/stats');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(timeout);
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }
