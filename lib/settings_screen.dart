@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<Uint8List?> fetchCoverImageBytes(String userId) async {
     final token = await ApiService.storage.read(key: 'jwt');
     final response = await Dio().get(
-      '${ApiConfig.baseUrl}/users/$userId/cover-image-bytes',
+      '${ApiConfig.baseUrl}/api/users/$userId/cover-image-bytes',
       options: Options(
         responseType: ResponseType.bytes,
         headers: {'Authorization': 'Bearer $token'},

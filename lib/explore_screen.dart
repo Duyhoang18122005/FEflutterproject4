@@ -260,7 +260,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               itemBuilder: (context, index) {
                                 final moment = filteredMoments[index];
                                 final imageUrl = (moment['imageUrls'] as List).isNotEmpty
-                                    ? '${ApiConfig.baseUrl}/${moment['imageUrls'][0]}'
+                                    ? '${ApiConfig.baseUrl}/api/moments/moment-images/' + (moment['imageUrls'][0] as String).split('/').last
                                     : null;
                                 final userId = moment['playerUserId']?.toString();
                                 return GestureDetector(
